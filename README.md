@@ -10,7 +10,7 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 ## ✨ Caratteristiche
 
 - **Simulatore Server/PLC:** gestione asincrona delle connessioni sulla porta 5000
-- **Client di monitoraggio:** interfaccia console per interrogare lo stato della macchina
+- **Client di Monitoraggio:** interfaccia a TUI (Terminal User Interface) con Spectre.Console per interrogare lo stato della macchina in modo leggibile e strutturato
 - **Protocollo Polling:** implementazione di una logica Master-Slave per la richiesta dati (es. `READ_PRESSURE`)
 - **CI/CD Ready:** pipeline GitHub Actions integrata per la validazione automatica del codice ad ogni modifica
 
@@ -37,6 +37,7 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 - [x] **Implementazione Polling:** Sistema Request/Response (Client/Server) configurato
 - [x] **CI/CD Pipeline:** `dotnet.yml` su GitHub Actions — stato **Green** (build superata)
 - [x] **Version Control:** Repository Git collegata correttamente al remoto GitHub
+- [x] **UI Engineering:** Implementazione TUI (Terminal User Interface) con Spectre.Console
 
 ## 🏗️ Architettura e Logica
 
@@ -54,12 +55,19 @@ Il progetto ha superato il modello a "push continuo" (il server invia dati a pre
 
 Questo è il cuore di ogni comunicazione Master-Slave nell'automazione industriale.
 
+### Evoluzione visuale: verso una TUI con Spectre.Console
+
+Per migliorare l'usabilità dello strumento senza passare subito alla complessità del Web (Blazor), è stato introdotto **Spectre.Console**:
+
+- **Motivazione:** le interfacce a riga di comando (CLI) sono standard nell'automazione, ma le tabelle e i colori di Spectre permettono di creare una "dashboard" leggibile istantaneamente dall'operatore.
+- **Lezione:** separare la logica di comunicazione (Socket) dalla logica di presentazione (TUI) rende il codice più manutenibile e professionale.
+
 ### Componenti
 
 | Componente | Descrizione |
 |---|---|
 | **Server** | Ascolta su `IPAddress.Any` (qualsiasi interfaccia di rete) sulla porta 5000, gestisce i comandi in entrata e restituisce i valori corrispondenti |
-| **Client** | Si connette, invia un comando stringa e attende la risposta bufferizzata, con gestione sicura dei tipi (`?? string.Empty`) |
+| **Client** | Si connette, invia un comando stringa e attende la risposta bufferizzata, con gestione sicura dei tipi (`?? string.Empty`) e visualizza i dati tramite `AnsiConsole` (tabelle formattate e `SelectionPrompt` per input a prova di errore) |
 
 ## 🐛 Troubleshooting Log
 
@@ -87,17 +95,38 @@ Lezioni raccolte durante lo sviluppo, utili come riferimento futuro.
 - **Problema:** incertezza sulla struttura delle cartelle.
 - **Risoluzione:** percorso esatto `.github/workflows/dotnet.yml`. Semaforo verde = codice validato.
 
+### 6. Installazione pacchetti NuGet
+- **Problema:** necessità di utilizzare librerie esterne (Spectre.Console).
+- **Risoluzione:** utilizzo del comando `dotnet add package Spectre.Console`. Fondamentale assicurarsi di essere nella cartella corretta (file `.csproj`) prima di eseguire il comando.
+
 ## 💭 Riflessioni Tecniche
 
 La configurazione di una pipeline CI/CD ha chiarito che il software non è solo "scrivere codice", ma creare un processo: avere un test automatico su GitHub garantisce che, anche a distanza, un'eventuale modifica che "rompe" qualcosa venga segnalata immediatamente.
 
 La gestione del "remote already exists" in Git ha insegnato che i messaggi d'errore non vanno temuti, ma letti come indicazioni stradali: Git non vuole creare duplicati, vuole solo sapere quale sia la strada corretta da seguire.
 
+L'adozione di Spectre.Console ha trasformato il Client da un semplice script di test a uno strumento di supervisione vero e proprio, dimostrando che l'usabilità conta quanto la funzionalità.
+
 ## 🛠️ Tech Stack
 
 - C# / .NET
 - TCP/IP Sockets
+- Spectre.Console (TUI)
 - GitHub Actions (CI/CD)
+
+## 🖼️ Screenshot
+
+**Server in ascolto e richiesta ricevuta:**
+
+![Richiesta Server](docs/images/server-screenshot.png)
+
+**Client — selezione del comando da inviare:**
+
+![Selezione comando Client](docs/images/client-screenshot-1.png)
+
+**Client — risposta del PLC visualizzata in tabella:**
+
+![Risposta Client](docs/images/client-screenshot-2.png)
 
 ---
 
