@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Spectre.Console; 
 
 class Program
 {
@@ -10,7 +11,7 @@ class Program
     {
         if (args.Length == 0)
         {
-            Console.WriteLine("Uso: dotnet run <server|client>");
+            AnsiConsole.MarkupLine("[red]Errore:[/ red] Specificare [yellow]server[/] o [yellow]client[/].");
             return;
         }
 
@@ -28,7 +29,7 @@ class Program
 
     static async Task RunServer()
     {
-        Console.WriteLine("[SERVER/PLC] In attesa di comandi sulla porta 5000...");
+        AnsiConsole.MarkupLine("[bold green]PLC/SERVER Virtuale attivo sulla porta 5000...[/]");
         TcpListener listener = new TcpListener(IPAddress.Any, 5000);
         listener.Start();
 
@@ -41,53 +42,51 @@ class Program
             int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
             string command = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
 
-            Console.WriteLine($"[SERVER/PLC] Ricevuto comando: {command}");
+            AnsiConsole.MarkupLine($"[dim]Richiesta ricevuta:[/] [yellow]{command}[/]");
 
-            if (command == "READ_PRESSURE")
+            string responseData = command switch
             {
-                string data = "PRESSURE: 12.5 BAR";
-                byte[] response = Encoding.UTF8.GetBytes(data);
-                await stream.WriteAsync(response, 0, response.Length);
-                Console.WriteLine($"[SERVER/PLC] Dato inviato: {data}");
-            }
-            else if (command == "READ_TEMP")
-            {
-                string data = "TEMP: 24.5 C";
-                byte[] response = Encoding.UTF8.GetBytes(data);
-                await stream.WriteAsync(response, 0, response.Length);
-                Console.WriteLine($"[SERVER/PLC] Dato inviato: {data}");
-            }
-            else
-            {
-                string error = "ERROR: Unknown Command";
-                byte[] response = Encoding.UTF8.GetBytes(error);
-                await stream.WriteAsync(response, 0, response.Length);
-                Console.WriteLine($"[SERVER/PLC] Errore inviato: {error}");
-            }
+                "READ_PRESSURE" => "PRESSURE: 12.5 BAR",
+                "READ_TEMP" => "TEMP: 24.5 C",
+                _ => "ERROR: Unknown Command"
+            };
+
+            byte[] response = Encoding.UTF8.GetBytes(responseData);
+            await stream.WriteAsync(response, 0, response.Length);
         }
     }
 
     static async Task RunClient()
     {
-        Console.WriteLine("[CLIENT/MONITOR] Connessione al PLC...");
+        AnsiConsole.MarkupLine("[bold blue]CLIENT/MONITOR di Supervisione[/]");
         
         using TcpClient client = new TcpClient();
         await client.ConnectAsync("127.0.0.1", 5000);
 
         using NetworkStream stream = client.GetStream();
         
-        // Input interattivo
-        Console.Write("Inserisci comando (es. READ_PRESSURE, READ_TEMP): ");
-        // Console.ReadLine() can return null; provide a safe default to avoid nullable warnings
-        string command = Console.ReadLine() ?? string.Empty;
+        var command = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Seleziona il comando da inviare:")
+                .PageSize(10)
+                .AddChoices(new[] {
+                    "READ_PRESSURE",
+                    "READ_TEMP"
+                }));
         
         byte[] commandBytes = Encoding.UTF8.GetBytes(command);
         await stream.WriteAsync(commandBytes, 0, commandBytes.Length);
 
         byte[] buffer = new byte[1024];
         int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+        string message = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
 
-        string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-        Console.WriteLine($"[CLIENT/MONITOR] Risposta ricevuta: {message}");
+        var table = new Table();
+        table.AddColumn("Stato");
+        table.AddColumn("Valore");
+        table.AddRow("Comando inviato", command);
+        table.AddRow("Risposta PLC", $"[bold]{message}[/]");
+        
+        AnsiConsole.Write(table);
     }
 }

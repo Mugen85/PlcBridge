@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "zND7W/1YzJg=",
+  "dgSpecHash": "dVNQL0TiQd0=",
   "success": true,
   "projectFilePath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\doppi\\.nuget\\packages\\spectre.console\\0.57.2\\spectre.console.0.57.2.nupkg.sha512",
+    "C:\\Users\\doppi\\.nuget\\packages\\spectre.console.ansi\\0.57.2\\spectre.console.ansi.0.57.2.nupkg.sha512"
+  ],
   "logs": []
 }

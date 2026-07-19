@@ -12,3 +12,8 @@ C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\refint\PlcBridge.
 C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.pdb
 C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.genruntimeconfig.cache
 C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\ref\PlcBridge.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\bin\Debug\net10.0\Spectre.Console.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\bin\Debug\net10.0\Spectre.Console.Ansi.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.csproj.AssemblyReference.cache
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.sourcelink.json
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.csproj.Up2Date
