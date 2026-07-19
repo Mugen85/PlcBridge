@@ -1,0 +1,14 @@
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\bin\Debug\net10.0\PlcBridge.exe
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\bin\Debug\net10.0\PlcBridge.deps.json
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\bin\Debug\net10.0\PlcBridge.runtimeconfig.json
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\bin\Debug\net10.0\PlcBridge.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\bin\Debug\net10.0\PlcBridge.pdb
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.GeneratedMSBuildEditorConfig.editorconfig
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.AssemblyInfoInputs.cache
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.AssemblyInfo.cs
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.csproj.CoreCompileInputs.cache
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\refint\PlcBridge.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.pdb
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\PlcBridge.genruntimeconfig.cache
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\obj\Debug\net10.0\ref\PlcBridge.dll
