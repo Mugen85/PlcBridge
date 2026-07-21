@@ -9,9 +9,11 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 
 ## ✨ Caratteristiche
 
-- **Simulatore Server/PLC:** gestione asincrona delle connessioni sulla porta 5000
-- **Client di Monitoraggio:** interfaccia a TUI (Terminal User Interface) con Spectre.Console per interrogare lo stato della macchina in modo leggibile e strutturato
-- **Protocollo Polling:** implementazione di una logica Master-Slave per la richiesta dati (es. `READ_PRESSURE`)
+- **Simulatore Server/PLC Stateful:** gestione asincrona delle connessioni sulla porta 5000, con memoria interna che simula i registri di un vero PLC
+- **Client di Monitoraggio:** interfaccia a TUI (Terminal User Interface) con Spectre.Console per interrogare e controllare lo stato della macchina in modo leggibile e strutturato
+- **Comandi di lettura:** `READ_PRESSURE`, `READ_TEMP`, `SYSTEM_STATUS`
+- **Comandi di controllo attuatori:** `START_PUMP`, `STOP_PUMP` per l'interazione bidirezionale tipica di una vera HMI
+- **Protocollo Polling:** implementazione di una logica Master-Slave per la richiesta e l'invio dati
 - **CI/CD Ready:** pipeline GitHub Actions integrata per la validazione automatica del codice ad ogni modifica
 
 ## 🚀 Come iniziare
@@ -38,6 +40,7 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 - [x] **CI/CD Pipeline:** `dotnet.yml` su GitHub Actions — stato **Green** (build superata)
 - [x] **Version Control:** Repository Git collegata correttamente al remoto GitHub
 - [x] **UI Engineering:** Implementazione TUI (Terminal User Interface) con Spectre.Console
+- [x] **Stateful Server & Controllo Attuatori:** memoria di stato interna e comandi di scrittura (`START_PUMP`, `STOP_PUMP`)
 
 ## 🏗️ Architettura e Logica
 
@@ -62,11 +65,18 @@ Per migliorare l'usabilità dello strumento senza passare subito alla complessit
 - **Motivazione:** le interfacce a riga di comando (CLI) sono standard nell'automazione, ma le tabelle e i colori di Spectre permettono di creare una "dashboard" leggibile istantaneamente dall'operatore.
 - **Lezione:** separare la logica di comunicazione (Socket) dalla logica di presentazione (TUI) rende il codice più manutenibile e professionale.
 
+### Nuova evoluzione: stato del server e comandi di scrittura (controllo attuatori)
+
+Per rendere il simulatore un vero sistema industriale prima del salto verso il web (Blazor), sono stati introdotti due concetti cruciali:
+
+1. **Memoria di Stato (Stateful Server):** il server ora mantiene variabili globali (`isPumpRunning`, `currentPressure`) che simulano i registri interni di un PLC. Non si limita più a rispondere con dati estemporanei, ma tiene traccia dello stato degli attuatori.
+2. **Comandi di Scrittura / Controllo:** oltre alle letture passive (`READ_TEMP`, `READ_PRESSURE`), sono stati aggiunti comandi attivi come `START_PUMP`, `STOP_PUMP` e `SYSTEM_STATUS`. Questo simula l'interazione bidirezionale tipica di una vera HMI (accensione/spegnimento di macchinari).
+
 ### Componenti
 
 | Componente | Descrizione |
 |---|---|
-| **Server** | Ascolta su `IPAddress.Any` (qualsiasi interfaccia di rete) sulla porta 5000, gestisce i comandi in entrata e restituisce i valori corrispondenti |
+| **Server** | Ascolta su `IPAddress.Any` (qualsiasi interfaccia di rete) sulla porta 5000, gestisce i comandi in entrata (lettura e scrittura) e mantiene lo stato interno degli attuatori |
 | **Client** | Si connette, invia un comando stringa e attende la risposta bufferizzata, con gestione sicura dei tipi (`?? string.Empty`) e visualizza i dati tramite `AnsiConsole` (tabelle formattate e `SelectionPrompt` per input a prova di errore) |
 
 ## 🐛 Troubleshooting Log
@@ -116,17 +126,17 @@ L'adozione di Spectre.Console ha trasformato il Client da un semplice script di 
 
 ## 🖼️ Screenshot
 
-**Server in ascolto e richiesta ricevuta:**
+**Client — avvio pompa e system status:**
 
-![Richiesta Server](docs/images/server-screenshot.png)
+![Client controllo pompa e stato sistema](docs/images/client-screenshot-1.png)
 
-**Client — selezione del comando da inviare:**
+**Client — riepilogo comandi e risposte:**
 
-![Selezione comando Client](docs/images/client-screenshot-1.png)
+![Client riepilogo comandi](docs/images/client-screenshot-2.png)
 
-**Client — risposta del PLC visualizzata in tabella:**
+**Server — ricezione comando e attuazione:**
 
-![Risposta Client](docs/images/client-screenshot-2.png)
+![Server comando attuatore](docs/images/server-screenshot.png)
 
 ---
 
