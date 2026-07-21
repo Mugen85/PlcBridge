@@ -8,6 +8,11 @@ using Spectre.Console;
 class Program
 {
     private static readonly Random random = new Random();
+    
+    // Stato interno del PLC simulato (memoria dei registri)
+    private static bool isPumpRunning = false;
+    private static double currentPressure = 12.0;
+    private static double currentTemperature = 22.0;
 
     static async Task Main(string[] args)
     {
@@ -31,7 +36,7 @@ class Program
 
     static async Task RunServer()
     {
-        AnsiConsole.MarkupLine("[bold green]PLC/SERVER Virtuale attivo sulla porta 5000...[/]");
+        AnsiConsole.MarkupLine("[bold green]PLC/SERVER Virtuale attivo sulla porta 5000 (Stateful Mode)...[/]");
         TcpListener listener = new TcpListener(IPAddress.Any, 5000);
         listener.Start();
 
@@ -46,10 +51,18 @@ class Program
 
             AnsiConsole.MarkupLine($"[dim]Richiesta ricevuta:[/] [yellow]{command}[/]");
 
+            // Aggiornamento simulato dei valori fisici con fluttuazione
+            currentPressure = Math.Round(10.0 + (random.NextDouble() * 5.0), 1);
+            currentTemperature = Math.Round(20.0 + (random.NextDouble() * 10.0), 1);
+
+            // Elaborazione dei comandi (Lettura e Scrittura / Attuatori)
             string responseData = command switch
             {
-                "READ_PRESSURE" => $"PRESSURE: {Math.Round(10.0 + (random.NextDouble() * 5.0), 1)} BAR",
-                "READ_TEMP" => $"TEMP: {Math.Round(20.0 + (random.NextDouble() * 10.0), 1)} C",
+                "READ_PRESSURE" => $"PRESSURE: {currentPressure} BAR | PUMP: {(isPumpRunning ? "ON" : "OFF")}",
+                "READ_TEMP" => $"TEMP: {currentTemperature} C | PUMP: {(isPumpRunning ? "ON" : "OFF")}",
+                "START_PUMP" => SetPumpState(true),
+                "STOP_PUMP" => SetPumpState(false),
+                "SYSTEM_STATUS" => $"STATUS -> Temp: {currentTemperature}C, Press: {currentPressure}BAR, Pump: {(isPumpRunning ? "RUNNING" : "STOPPED")}",
                 _ => "ERROR: Unknown Command"
             };
 
@@ -58,22 +71,34 @@ class Program
         }
     }
 
+    private static string SetPumpState(bool state)
+    {
+        isPumpRunning = state;
+        string statusText = isPumpRunning ? "[green]AVVIATA[/]" : "[red]ARRESTATA[/]";
+        AnsiConsole.MarkupLine($"[bold blue]Comando Attuatore:[/] Pompa {statusText}");
+        return $"SUCCESS: Pump is now {(isPumpRunning ? "RUNNING" : "STOPPED")}";
+    }
+
     static async Task RunClient()
     {
-        AnsiConsole.MarkupLine("[bold blue]CLIENT/MONITOR di Supervisione[/]");
+        AnsiConsole.MarkupLine("[bold blue]CLIENT/MONITOR di Supervisione (HMI Terminal)[/]");
         
         using TcpClient client = new TcpClient();
         await client.ConnectAsync("127.0.0.1", 5000);
 
         using NetworkStream stream = client.GetStream();
         
+        // Menu interattivo esteso con comandi di lettura e scrittura (attuatori)
         var command = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
-                .Title("Seleziona il comando da inviare:")
+                .Title("Seleziona il comando di controllo o lettura:")
                 .PageSize(10)
                 .AddChoices(new[] {
                     "READ_PRESSURE",
-                    "READ_TEMP"
+                    "READ_TEMP",
+                    "START_PUMP",
+                    "STOP_PUMP",
+                    "SYSTEM_STATUS"
                 }));
         
         byte[] commandBytes = Encoding.UTF8.GetBytes(command);
@@ -83,8 +108,9 @@ class Program
         int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
         string message = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
 
+        // Rendering della risposta in tabella formattata
         var table = new Table();
-        table.AddColumn("Stato");
+        table.AddColumn("Parametro / Stato");
         table.AddColumn("Valore");
         table.AddRow("Comando inviato", command);
         table.AddRow("Risposta PLC", $"[bold]{message}[/]");
