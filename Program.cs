@@ -7,6 +7,8 @@ using Spectre.Console;
 
 class Program
 {
+    private static readonly Random random = new Random();
+
     static async Task Main(string[] args)
     {
         if (args.Length == 0)
@@ -46,8 +48,8 @@ class Program
 
             string responseData = command switch
             {
-                "READ_PRESSURE" => "PRESSURE: 12.5 BAR",
-                "READ_TEMP" => "TEMP: 24.5 C",
+                "READ_PRESSURE" => $"PRESSURE: {Math.Round(10.0 + (random.NextDouble() * 5.0), 1)} BAR",
+                "READ_TEMP" => $"TEMP: {Math.Round(20.0 + (random.NextDouble() * 10.0), 1)} C",
                 _ => "ERROR: Unknown Command"
             };
 
