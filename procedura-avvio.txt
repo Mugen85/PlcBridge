@@ -1,0 +1,55 @@
+========================================
+PROCEDURA DI AVVIO - PlcBridge
+========================================
+
+METODO 1 - Menu terminal
+----------------------------------------
+1. Seleziona Terminal nella barra dei menu
+2. Seleziona Run Task
+3. run both e partiranno sia il server che il client in un unico terminale
+
+Non si vedrà il server avviato, ma il menu del client.
+Una volta uscito farà vedere la pagina del server che dovrà essere chiuso con ctrl+c per non lasciare processi appesi
+
+
+METODO 2 - Da riga di comando (terminale)
+----------------------------------------
+Se preferisci lanciare tutto a mano da terminale, servono DUE terminali separati
+(il server resta sempre in ascolto e non termina da solo):
+
+Terminale 1 (server):
+    dotnet run server
+
+Terminale 2 (client):
+    dotnet run client
+
+Nota: aprire il terminale 2 con almeno 1 secondo di ritardo rispetto al
+terminale 1, per dare tempo al server di aprire la porta 5000.
+
+
+DURANTE L'USO
+----------------------------------------
+- Il client mostra un menu con i comandi disponibili
+  (READ_PRESSURE, READ_TEMP, START_PUMP, STOP_PUMP, SYSTEM_STATUS)
+- Dopo ogni comando il menu si ripresenta automaticamente:
+  puoi inviare più richieste di seguito senza riavviare nulla
+- Per uscire dal client: seleziona la voce "ESCI" dal menu
+- Il server resta attivo anche dopo che il client si disconnette:
+  puoi rilanciare SOLO il client (task "run-client" o "dotnet run client")
+  per una nuova sessione, senza riavviare il server
+
+
+SE MODIFICHI IL CODICE SORGENTE
+----------------------------------------
+Con "dotnet run" (senza --no-build) la ricompilazione e' automatica:
+basta salvare il file e rilanciare "run-both" (o i comandi da terminale).
+Non serve lanciare "dotnet build" a parte.
+
+
+RISOLUZIONE PROBLEMI RAPIDA
+----------------------------------------
+- Errore "porta gia' in uso": il vecchio processo server e' ancora attivo,
+  chiudi il terminale del server prima di rilanciare.
+- Il client si disconnette al secondo comando: verifica di avere l'ultima
+  versione del metodo RunServer (deve gestire piu' comandi per connessione,
+  non uno solo).
