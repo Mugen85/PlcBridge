@@ -11,7 +11,9 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 ## ✨ Caratteristiche
 
 - **Simulatore Server/PLC Stateful:** gestione asincrona delle connessioni sulla porta 5000, con memoria interna che simula i registri di un vero PLC
-- **Client di Monitoraggio:** interfaccia a TUI (Terminal User Interface) con Spectre.Console per interrogare e controllare lo stato della macchina in modo leggibile e strutturato
+- **Connessione persistente Client-Server:** una singola connessione TCP rimane attiva per l'intera sessione, permettendo l'invio di più comandi consecutivi senza riconnettersi
+- **Logging strutturato con Serilog:** eventi tracciati su console e su file, con rotazione giornaliera e pulizia automatica dei log più vecchi (retention di 3 file)
+- **Client di Monitoraggio:** interfaccia a TUI (Terminal User Interface) con Spectre.Console per interrogare e controllare lo stato della macchina in modo leggibile e strutturato, con menu ciclico per richieste multiple e uscita esplicita (`ESCI`)
 - **Comandi di lettura:** `READ_PRESSURE`, `READ_TEMP`, `SYSTEM_STATUS`
 - **Comandi di controllo attuatori:** `START_PUMP`, `STOP_PUMP` per l'interazione bidirezionale tipica di una vera HMI
 - **Protocollo Polling:** implementazione di una logica Master-Slave per la richiesta e l'invio dati
@@ -50,6 +52,8 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 - [x] **Stateful Server & Controllo Attuatori:** memoria di stato interna e comandi di scrittura (`START_PUMP`, `STOP_PUMP`)
 - [x] **Refactoring Dependency Injection:** introduzione di `IPlcController` e Inversion of Control
 - [x] **Quality Assurance:** suite di Test Unitari (xUnit) configurata e funzionante
+- [x] **Connessione persistente multi-comando:** client e server mantengono la connessione aperta per l'intera sessione, con loop di lettura/scrittura su entrambi i lati
+- [x] **Logging con Serilog:** tracciamento eventi su console e file, con rotazione giornaliera e retention automatica dei log più vecchi
 
 ## 🏗️ Architettura e Logica
 
@@ -66,6 +70,40 @@ Il progetto ha superato il modello a "push continuo" (il server invia dati a pre
 3. Solo se valida, il Server risponde
 
 Questo è il cuore di ogni comunicazione Master-Slave nell'automazione industriale.
+
+### Connessione persistente e sessione multi-comando
+
+La prima implementazione apriva e chiudeva una connessione TCP per ogni singolo comando: client e server si scambiavano un messaggio, poi lo `stream` veniva rilasciato (`using` a fine iterazione del loop). Questo andava bene per un comando isolato, ma non permetteva una vera sessione di monitoraggio continuo.
+
+Il refactoring introduce un **loop di comunicazione su entrambi i lati**:
+
+- Il **Client** stabilisce la connessione una sola volta, poi resta in un ciclo che ripropone il menu dopo ogni risposta, finché l'operatore non seleziona esplicitamente `ESCI`.
+- Il **Server**, per ogni client accettato, entra in un ciclo interno che continua a leggere comandi sulla stessa connessione finché non riceve un segnale di chiusura pulita (`bytesRead == 0`) o un'eccezione di rete (`IOException`), gestita senza terminare il processo server.
+
+Questo modello riflette meglio una vera sessione HMI-PLC, dove l'operatore invia più richieste consecutive senza dover ristabilire il collegamento ogni volta.
+
+### Logging strutturato e rotazione dei log con Serilog
+
+Sia il server che il client scrivono i propri eventi tramite **Serilog**, con due destinazioni (sink) configurate contemporaneamente:
+
+- **Console:** output leggibile a runtime, con timestamp e livello di log in formato compatto (`[HH:mm:ss LVL] Messaggio`).
+- **File:** un file di log per giorno (`logs/plcbridge-YYYYMMDD.txt`), grazie a `RollingInterval.Day`.
+
+Per evitare che la cartella `logs/` cresca indefinitamente nel tempo, è impostato un **limite di retention**:
+
+```csharp
+.WriteTo.File(
+    "logs/plcbridge-.txt",
+    rollingInterval: RollingInterval.Day,
+    retainedFileCountLimit: 3 // Mantiene solo gli ultimi 3 file
+)
+```
+
+- Ad ogni nuovo giorno, Serilog crea un nuovo file di log.
+- Quando il numero di file supera il limite impostato (3), i file **più vecchi vengono eliminati automaticamente** ad ogni avvio dell'applicazione — non serve alcuna pulizia manuale.
+- Questo bilancia due esigenze tipiche in ambito industriale: avere uno storico sufficiente per il debug retrospettivo (es. "cosa è successo ieri quando la pompa si è fermata"), senza che i log occupino spazio disco indefinitamente.
+
+**Nota:** il limite si applica al numero di *file*, non ai singoli eventi di log al loro interno — con `RollingInterval.Day` corrisponde quindi a circa 3 giorni di storico. Se in futuro serve una retention diversa (es. per requisiti di audit più stringenti), basta modificare il valore di `retainedFileCountLimit` o passare a un `rollingInterval` differente (es. `Hour` per rotazioni più frequenti).
 
 ### Evoluzione visuale: verso una TUI con Spectre.Console
 
@@ -97,8 +135,8 @@ Per rendere il software pronto per il web (Blazor) e per protocolli di automazio
 
 | Componente | Descrizione |
 |---|---|
-| **Server** | Ascolta su `IPAddress.Any` (qualsiasi interfaccia di rete) sulla porta 5000, gestisce i comandi in entrata (lettura e scrittura) tramite un `IPlcController` iniettato e mantiene lo stato interno degli attuatori |
-| **Client** | Si connette, invia un comando stringa e attende la risposta bufferizzata, con gestione sicura dei tipi (`?? string.Empty`) e visualizza i dati tramite `AnsiConsole` (tabelle formattate e `SelectionPrompt` per input a prova di errore) |
+| **Server** | Ascolta su `IPAddress.Any` (qualsiasi interfaccia di rete) sulla porta 5000, gestisce i comandi in entrata (lettura e scrittura) tramite un `IPlcController` iniettato, mantiene lo stato interno degli attuatori e gestisce più comandi per connessione in un ciclo persistente |
+| **Client** | Si connette una sola volta e resta in sessione: invia comandi stringa in loop, attende la risposta bufferizzata con gestione sicura dei tipi (`?? string.Empty`) e visualizza i dati tramite `AnsiConsole` (tabelle formattate e `SelectionPrompt` per input a prova di errore), fino a uscita esplicita (`ESCI`) |
 | **PlcBridge.Tests** | Progetto di test xUnit separato, che valida ogni comando del PLC tramite `IPlcController` senza dipendenze di rete |
 
 ## 🐛 Troubleshooting Log
@@ -142,6 +180,11 @@ Lezioni raccolte durante lo sviluppo, utili come riferimento futuro.
 - **Problema:** il comando cercava una cartella, ma doveva puntare al file `.csproj` specifico.
 - **Risoluzione:** `dotnet add PlcBridge.Tests/PlcBridge.Tests.csproj reference PlcBridge.csproj`.
 
+### 9. Connessione interrotta al secondo comando (`IOException` / `SocketException 10053`)
+- **Problema:** il client si disconnetteva con un'eccezione fatale non appena si tentava di inviare un secondo comando nella stessa sessione.
+- **Causa:** il server apriva la connessione con `using TcpClient`/`using NetworkStream` **dentro** il loop `while (true)` di accettazione, gestendo un solo comando per connessione. Al termine dell'iterazione, gli `using` chiudevano automaticamente il socket, mentre il client presumeva la connessione ancora attiva.
+- **Risoluzione:** aggiunto un ciclo interno lato server (`while (client.Connected)`) che continua a leggere/rispondere sulla stessa connessione finché il client non la chiude esplicitamente (`bytesRead == 0`) o si disconnette bruscamente (gestito con `catch (IOException)` senza terminare il processo server).
+
 ## 💭 Riflessioni Tecniche
 
 La configurazione di una pipeline CI/CD ha chiarito che il software non è solo "scrivere codice", ma creare un processo: avere un test automatico su GitHub garantisce che, anche a distanza, un'eventuale modifica che "rompe" qualcosa venga segnalata immediatamente.
@@ -153,6 +196,8 @@ L'adozione di Spectre.Console ha trasformato il Client da un semplice script di 
 La gestione della struttura Solution (`.sln`) ha insegnato quanto sia critica la configurazione ambientale: un progetto ben organizzato non è solo più leggibile, è anche più facile da compilare e testare.
 
 Il refactoring verso `IPlcController` e la Dependency Injection ha segnato il passaggio da un semplice script funzionante a un'architettura pensata per l'evoluzione: separare "cosa fa" il PLC da "come lo fa" apre la strada a nuove implementazioni (OPC UA, interfacce web) senza toccare la logica di business già testata. Il "motore" è ora pronto per essere loggato professionalmente con Serilog.
+
+Il passaggio da connessioni "usa e getta" a una sessione persistente ha chiarito una distinzione fondamentale nella programmazione di rete: la differenza tra "un protocollo che risponde a un comando" e "un protocollo che sostiene una conversazione". Il secondo richiede di pensare esplicitamente al ciclo di vita della connessione su entrambi i lati, non solo alla singola transazione.
 
 ## 🛠️ Tech Stack
 

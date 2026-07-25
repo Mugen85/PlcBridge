@@ -1,0 +1,7 @@
+2026-07-25 16:08:39.118 +02:00 [INF] Avvio del client di supervisione.
+2026-07-25 16:08:41.638 +02:00 [INF] Comando inviato al server: READ_PRESSURE
+2026-07-25 16:08:42.610 +02:00 [INF] Comando inviato al server: READ_TEMP
+2026-07-25 16:08:43.533 +02:00 [INF] Comando inviato al server: START_PUMP
+2026-07-25 16:08:45.010 +02:00 [INF] Comando inviato al server: SYSTEM_STATUS
+2026-07-25 16:08:46.426 +02:00 [INF] Comando inviato al server: STOP_PUMP
+2026-07-25 16:08:48.198 +02:00 [INF] Client terminato dall'utente.

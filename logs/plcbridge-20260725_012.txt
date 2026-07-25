@@ -1,3 +1,11 @@
 2026-07-25 15:57:43.175 +02:00 [INF] Avvio del client di supervisione.
 2026-07-25 15:57:49.472 +02:00 [INF] Comando inviato al server: READ_PRESSURE
 2026-07-25 15:57:51.498 +02:00 [INF] Client terminato dall'utente.
+2026-07-25 16:08:32.293 +02:00 [INF] PLC/SERVER Virtuale avviato sulla porta 5000.
+2026-07-25 16:08:39.214 +02:00 [INF] Client connesso: 127.0.0.1:58997
+2026-07-25 16:08:41.641 +02:00 [INF] Richiesta ricevuta: READ_PRESSURE
+2026-07-25 16:08:42.611 +02:00 [INF] Richiesta ricevuta: READ_TEMP
+2026-07-25 16:08:43.534 +02:00 [INF] Richiesta ricevuta: START_PUMP
+2026-07-25 16:08:45.011 +02:00 [INF] Richiesta ricevuta: SYSTEM_STATUS
+2026-07-25 16:08:46.427 +02:00 [INF] Richiesta ricevuta: STOP_PUMP
+2026-07-25 16:08:48.199 +02:00 [INF] Client disconnesso.
