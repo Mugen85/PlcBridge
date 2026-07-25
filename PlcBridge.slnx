@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PlcBridge.csproj" />
+  <Project Path="PlcBridge.Tests/PlcBridge.Tests.csproj" />
+</Solution>

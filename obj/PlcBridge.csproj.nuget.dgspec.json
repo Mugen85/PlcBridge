@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj": {}
+    "C:\\PROGETTI CSHARP\\GitHub-Projects\\plcbridge\\PlcBridge.csproj": {}
   },
   "projects": {
-    "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj": {
+    "C:\\PROGETTI CSHARP\\GitHub-Projects\\plcbridge\\PlcBridge.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj",
+        "projectUniqueName": "C:\\PROGETTI CSHARP\\GitHub-Projects\\plcbridge\\PlcBridge.csproj",
         "projectName": "PlcBridge",
-        "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj",
+        "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\plcbridge\\PlcBridge.csproj",
         "packagesPath": "C:\\Users\\doppi\\.nuget\\packages\\",
-        "outputPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\obj\\",
+        "outputPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\plcbridge\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

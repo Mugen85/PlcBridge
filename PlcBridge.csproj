@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.57.2" />
+    <Compile Remove="PlcBridge.Tests\**" />
+    <EmbeddedResource Remove="PlcBridge.Tests\**" />
+    <None Remove="PlcBridge.Tests\**" />
   </ItemGroup>
 
 </Project>

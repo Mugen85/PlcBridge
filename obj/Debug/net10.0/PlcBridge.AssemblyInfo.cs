@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PlcBridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+61341fad0f125d8df48474876a64b6f1be31a0dd")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ffad904a4e22481994fc20c6953ed3170804f426")]
 [assembly: System.Reflection.AssemblyProductAttribute("PlcBridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PlcBridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
