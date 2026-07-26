@@ -78,6 +78,29 @@
             "related": ".xml"
           }
         }
+      },
+      "PlcBridge.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/PlcBridge.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PlcBridge.Core.dll": {}
+        }
+      },
+      "PlcBridge.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "PlcBridge.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/PlcBridge.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PlcBridge.Infrastructure.dll": {}
+        }
       }
     }
   },
@@ -200,10 +223,21 @@
         "spectre.console.ansi.0.57.2.nupkg.sha512",
         "spectre.console.ansi.nuspec"
       ]
+    },
+    "PlcBridge.Core/1.0.0": {
+      "type": "project",
+      "path": "PlcBridge.Core/PlcBridge.Core.csproj",
+      "msbuildProject": "PlcBridge.Core/PlcBridge.Core.csproj"
+    },
+    "PlcBridge.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj",
+      "msbuildProject": "PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
+      "PlcBridge.Infrastructure >= 1.0.0",
       "Serilog >= 4.4.0",
       "Serilog.Sinks.Console >= 6.1.1",
       "Serilog.Sinks.File >= 7.0.0",
@@ -243,7 +277,11 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Infrastructure\\PlcBridge.Infrastructure.csproj": {
+              "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Infrastructure\\PlcBridge.Infrastructure.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

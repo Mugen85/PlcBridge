@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="PlcBridge.Core/PlcBridge.Core.csproj" />
   <Project Path="PlcBridge.csproj" />
+  <Project Path="PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj" />
   <Project Path="PlcBridge.Tests/PlcBridge.Tests.csproj" />
 </Solution>

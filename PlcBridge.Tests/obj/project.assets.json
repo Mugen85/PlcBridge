@@ -471,6 +471,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
+          "PlcBridge.Infrastructure": "1.0.0",
           "Serilog": "4.4.0",
           "Serilog.Sinks.Console": "6.1.1",
           "Serilog.Sinks.File": "7.0.0",
@@ -481,6 +482,29 @@
         },
         "runtime": {
           "bin/placeholder/PlcBridge.dll": {}
+        }
+      },
+      "PlcBridge.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/PlcBridge.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PlcBridge.Core.dll": {}
+        }
+      },
+      "PlcBridge.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "PlcBridge.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/PlcBridge.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PlcBridge.Infrastructure.dll": {}
         }
       }
     }
@@ -1036,12 +1060,23 @@
       "type": "project",
       "path": "../PlcBridge.csproj",
       "msbuildProject": "../PlcBridge.csproj"
+    },
+    "PlcBridge.Core/1.0.0": {
+      "type": "project",
+      "path": "../PlcBridge.Core/PlcBridge.Core.csproj",
+      "msbuildProject": "../PlcBridge.Core/PlcBridge.Core.csproj"
+    },
+    "PlcBridge.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj",
+      "msbuildProject": "../PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
       "Microsoft.NET.Test.Sdk >= 17.10.0",
       "PlcBridge >= 1.0.0",
+      "PlcBridge.Core >= 1.0.0",
       "xunit >= 2.9.0",
       "xunit.runner.visualstudio >= 2.8.2"
     ]
@@ -1080,6 +1115,9 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
+            "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Core\\PlcBridge.Core.csproj": {
+              "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Core\\PlcBridge.Core.csproj"
+            },
             "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj": {
               "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj"
             }
