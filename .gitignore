@@ -1,0 +1,10 @@
+.NET Core / .NET 5+bin/
+obj/File di Log (Serilog o altri)logs/
+*.log
+*.txtVisual Studio / Visual Studio Code.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstatesMac / Linux (se lavori in cross-platform).DS_StoreFile di build e cache*.cache
+*.suo
+TestResults/
