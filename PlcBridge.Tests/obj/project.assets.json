@@ -294,83 +294,6 @@
           }
         }
       },
-      "Serilog/4.4.0": {
-        "type": "package",
-        "compile": {
-          "lib/net10.0/Serilog.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net10.0/Serilog.dll": {
-            "related": ".xml"
-          }
-        },
-        "build": {
-          "buildTransitive/Serilog.targets": {}
-        }
-      },
-      "Serilog.Sinks.Console/6.1.1": {
-        "type": "package",
-        "dependencies": {
-          "Serilog": "4.0.0"
-        },
-        "compile": {
-          "lib/net8.0/Serilog.Sinks.Console.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/Serilog.Sinks.Console.dll": {
-            "related": ".xml"
-          }
-        }
-      },
-      "Serilog.Sinks.File/7.0.0": {
-        "type": "package",
-        "dependencies": {
-          "Serilog": "4.2.0"
-        },
-        "compile": {
-          "lib/net9.0/Serilog.Sinks.File.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net9.0/Serilog.Sinks.File.dll": {
-            "related": ".xml"
-          }
-        }
-      },
-      "Spectre.Console/0.57.2": {
-        "type": "package",
-        "dependencies": {
-          "Spectre.Console.Ansi": "0.57.2"
-        },
-        "compile": {
-          "lib/net10.0/Spectre.Console.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net10.0/Spectre.Console.dll": {
-            "related": ".xml"
-          }
-        }
-      },
-      "Spectre.Console.Ansi/0.57.2": {
-        "type": "package",
-        "compile": {
-          "lib/net10.0/Spectre.Console.Ansi.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net10.0/Spectre.Console.Ansi.dll": {
-            "related": ".xml"
-          }
-        }
-      },
       "xunit/2.9.0": {
         "type": "package",
         "dependencies": {
@@ -467,23 +390,6 @@
           "build/net6.0/xunit.runner.visualstudio.props": {}
         }
       },
-      "PlcBridge/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v10.0",
-        "dependencies": {
-          "PlcBridge.Infrastructure": "1.0.0",
-          "Serilog": "4.4.0",
-          "Serilog.Sinks.Console": "6.1.1",
-          "Serilog.Sinks.File": "7.0.0",
-          "Spectre.Console": "0.57.2"
-        },
-        "compile": {
-          "bin/placeholder/PlcBridge.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/PlcBridge.dll": {}
-        }
-      },
       "PlcBridge.Core/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
@@ -492,19 +398,6 @@
         },
         "runtime": {
           "bin/placeholder/PlcBridge.Core.dll": {}
-        }
-      },
-      "PlcBridge.Infrastructure/1.0.0": {
-        "type": "project",
-        "framework": ".NETCoreApp,Version=v10.0",
-        "dependencies": {
-          "PlcBridge.Core": "1.0.0"
-        },
-        "compile": {
-          "bin/placeholder/PlcBridge.Infrastructure.dll": {}
-        },
-        "runtime": {
-          "bin/placeholder/PlcBridge.Infrastructure.dll": {}
         }
       }
     }
@@ -793,125 +686,6 @@
         "packageIcon.png"
       ]
     },
-    "Serilog/4.4.0": {
-      "sha512": "ZC6Le3rr4TVJJjS4KsQAesxeF1EhW9qcZmmG7eP5Y2G3+gTGkJEUXkq4+tZNPtyp05I0wWOxnIjwtxFweJsObw==",
-      "type": "package",
-      "path": "serilog/4.4.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "README.md",
-        "build/Serilog.targets",
-        "buildTransitive/Serilog.targets",
-        "icon.png",
-        "lib/net10.0/Serilog.dll",
-        "lib/net10.0/Serilog.xml",
-        "lib/net462/Serilog.dll",
-        "lib/net462/Serilog.xml",
-        "lib/net471/Serilog.dll",
-        "lib/net471/Serilog.xml",
-        "lib/net6.0/Serilog.dll",
-        "lib/net6.0/Serilog.xml",
-        "lib/net8.0/Serilog.dll",
-        "lib/net8.0/Serilog.xml",
-        "lib/net9.0/Serilog.dll",
-        "lib/net9.0/Serilog.xml",
-        "lib/netstandard2.0/Serilog.dll",
-        "lib/netstandard2.0/Serilog.xml",
-        "serilog.4.4.0.nupkg.sha512",
-        "serilog.nuspec"
-      ]
-    },
-    "Serilog.Sinks.Console/6.1.1": {
-      "sha512": "8jbqgjUyZlfCuSTaJk6lOca465OndqOz3KZP6Cryt/IqZYybyBu7GP0fE/AXBzrrQB3EBmQntBFAvMVz1COvAA==",
-      "type": "package",
-      "path": "serilog.sinks.console/6.1.1",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "README.md",
-        "icon.png",
-        "lib/net462/Serilog.Sinks.Console.dll",
-        "lib/net462/Serilog.Sinks.Console.xml",
-        "lib/net471/Serilog.Sinks.Console.dll",
-        "lib/net471/Serilog.Sinks.Console.xml",
-        "lib/net6.0/Serilog.Sinks.Console.dll",
-        "lib/net6.0/Serilog.Sinks.Console.xml",
-        "lib/net8.0/Serilog.Sinks.Console.dll",
-        "lib/net8.0/Serilog.Sinks.Console.xml",
-        "lib/netstandard2.0/Serilog.Sinks.Console.dll",
-        "lib/netstandard2.0/Serilog.Sinks.Console.xml",
-        "serilog.sinks.console.6.1.1.nupkg.sha512",
-        "serilog.sinks.console.nuspec"
-      ]
-    },
-    "Serilog.Sinks.File/7.0.0": {
-      "sha512": "fKL7mXv7qaiNBUC71ssvn/dU0k9t0o45+qm2XgKAlSt19xF+ijjxyA3R6HmCgfKEKwfcfkwWjayuQtRueZFkYw==",
-      "type": "package",
-      "path": "serilog.sinks.file/7.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "README.md",
-        "lib/net462/Serilog.Sinks.File.dll",
-        "lib/net462/Serilog.Sinks.File.xml",
-        "lib/net471/Serilog.Sinks.File.dll",
-        "lib/net471/Serilog.Sinks.File.xml",
-        "lib/net6.0/Serilog.Sinks.File.dll",
-        "lib/net6.0/Serilog.Sinks.File.xml",
-        "lib/net8.0/Serilog.Sinks.File.dll",
-        "lib/net8.0/Serilog.Sinks.File.xml",
-        "lib/net9.0/Serilog.Sinks.File.dll",
-        "lib/net9.0/Serilog.Sinks.File.xml",
-        "lib/netstandard2.0/Serilog.Sinks.File.dll",
-        "lib/netstandard2.0/Serilog.Sinks.File.xml",
-        "serilog-sink-nuget.png",
-        "serilog.sinks.file.7.0.0.nupkg.sha512",
-        "serilog.sinks.file.nuspec"
-      ]
-    },
-    "Spectre.Console/0.57.2": {
-      "sha512": "wzsB+P9i6F9G+cFOJxRotCiQWNSzZVAMxi8YMiHlGXXU1JLMXGp7zSSqBMmROZS2bzpK5jk+Saa7Evp8HwqhKg==",
-      "type": "package",
-      "path": "spectre.console/0.57.2",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "README.md",
-        "lib/net10.0/Spectre.Console.dll",
-        "lib/net10.0/Spectre.Console.xml",
-        "lib/net8.0/Spectre.Console.dll",
-        "lib/net8.0/Spectre.Console.xml",
-        "lib/net9.0/Spectre.Console.dll",
-        "lib/net9.0/Spectre.Console.xml",
-        "lib/netstandard2.0/Spectre.Console.dll",
-        "lib/netstandard2.0/Spectre.Console.xml",
-        "logo.png",
-        "spectre.console.0.57.2.nupkg.sha512",
-        "spectre.console.nuspec"
-      ]
-    },
-    "Spectre.Console.Ansi/0.57.2": {
-      "sha512": "Y1+u73shwP+JYHmrkdN6bSt2kaGBEAafhi2nrecczbXdFRey+k7J/WF9YPfcB0rqivv2S8fmif6FSBq9m/AFvw==",
-      "type": "package",
-      "path": "spectre.console.ansi/0.57.2",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "README.md",
-        "lib/net10.0/Spectre.Console.Ansi.dll",
-        "lib/net10.0/Spectre.Console.Ansi.xml",
-        "lib/net8.0/Spectre.Console.Ansi.dll",
-        "lib/net8.0/Spectre.Console.Ansi.xml",
-        "lib/net9.0/Spectre.Console.Ansi.dll",
-        "lib/net9.0/Spectre.Console.Ansi.xml",
-        "lib/netstandard2.0/Spectre.Console.Ansi.dll",
-        "lib/netstandard2.0/Spectre.Console.Ansi.xml",
-        "logo.png",
-        "spectre.console.ansi.0.57.2.nupkg.sha512",
-        "spectre.console.ansi.nuspec"
-      ]
-    },
     "xunit/2.9.0": {
       "sha512": "PtU3rZ0ThdmdJqTbK7GkgFf6iBaCR6Q0uvJHznID+XEYk2v6O/b7sRxqnbi3B2gRDXxjTqMkVNayzwsqsFUxRw==",
       "type": "package",
@@ -1056,26 +830,15 @@
         "xunit.runner.visualstudio.nuspec"
       ]
     },
-    "PlcBridge/1.0.0": {
-      "type": "project",
-      "path": "../PlcBridge.csproj",
-      "msbuildProject": "../PlcBridge.csproj"
-    },
     "PlcBridge.Core/1.0.0": {
       "type": "project",
       "path": "../PlcBridge.Core/PlcBridge.Core.csproj",
       "msbuildProject": "../PlcBridge.Core/PlcBridge.Core.csproj"
-    },
-    "PlcBridge.Infrastructure/1.0.0": {
-      "type": "project",
-      "path": "../PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj",
-      "msbuildProject": "../PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
       "Microsoft.NET.Test.Sdk >= 17.10.0",
-      "PlcBridge >= 1.0.0",
       "PlcBridge.Core >= 1.0.0",
       "xunit >= 2.9.0",
       "xunit.runner.visualstudio >= 2.8.2"
@@ -1117,9 +880,6 @@
           "projectReferences": {
             "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Core\\PlcBridge.Core.csproj": {
               "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Core\\PlcBridge.Core.csproj"
-            },
-            "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj": {
-              "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.csproj"
             }
           }
         }

@@ -1,0 +1,16 @@
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\bin\Debug\net10.0\PlcBridge.Infrastructure.deps.json
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\bin\Debug\net10.0\PlcBridge.Infrastructure.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\bin\Debug\net10.0\PlcBridge.Infrastructure.pdb
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\bin\Debug\net10.0\PlcBridge.Core.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\bin\Debug\net10.0\PlcBridge.Core.pdb
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridge.Infrastructure.csproj.AssemblyReference.cache
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridge.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridge.Infrastructure.AssemblyInfoInputs.cache
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridge.Infrastructure.AssemblyInfo.cs
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridge.Infrastructure.csproj.CoreCompileInputs.cache
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridge.Infrastructure.sourcelink.json
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridg.8C90677D.Up2Date
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridge.Infrastructure.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\refint\PlcBridge.Infrastructure.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\PlcBridge.Infrastructure.pdb
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Infrastructure\obj\Debug\net10.0\ref\PlcBridge.Infrastructure.dll
