@@ -18,6 +18,7 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 - **Comandi di controllo attuatori:** `START_PUMP`, `STOP_PUMP` per l'interazione bidirezionale tipica di una vera HMI
 - **Protocollo Polling:** implementazione di una logica Master-Slave per la richiesta e l'invio dati
 - **Architettura disaccoppiata:** logica del PLC astratta dietro l'interfaccia `IPlcController` e iniettata via costruttore (Dependency Injection)
+- **Clean Architecture:** struttura a layer (Core, Infrastructure, Worker, Tests) per un disaccoppiamento totale tra logica di dominio, implementazione hardware e strato di hosting
 - **Test Unitari:** suite xUnit che verifica ogni comando del PLC senza dover aprire porte di rete o socket
 - **CI/CD Ready:** pipeline GitHub Actions integrata per la validazione automatica del codice ad ogni modifica
 
@@ -27,19 +28,17 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
    ```
    git clone https://github.com/Mugen85/PlcBridge.git
    ```
-2. Apri il terminale nella cartella del progetto.
-3. Avvia il Server:
+2. Apri **due terminali** nella cartella del progetto (`PlcBridge.Worker`).
+3. Nel primo terminale, avvia il Server:
    ```
    dotnet run server
    ```
-4. Avvia il Client (in un altro terminale):
+4. Nel secondo terminale, avvia il Client:
    ```
    dotnet run client
    ```
-5. Esegui la suite di test:
-   ```
-   dotnet test
-   ```
+
+> ⚠️ La suite di test (`PlcBridge.Tests`) è momentaneamente **commentata dalla solution**: va aggiornata per allinearla alla nuova Clean Architecture (in particolare ai contratti di `IPlcController` dopo il refactoring). Verrà riattivata a breve.
 
 ## ✅ Stato del Progetto
 
@@ -51,11 +50,21 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 - [x] **UI Engineering:** Implementazione TUI (Terminal User Interface) con Spectre.Console
 - [x] **Stateful Server & Controllo Attuatori:** memoria di stato interna e comandi di scrittura (`START_PUMP`, `STOP_PUMP`)
 - [x] **Refactoring Dependency Injection:** introduzione di `IPlcController` e Inversion of Control
-- [x] **Quality Assurance:** suite di Test Unitari (xUnit) configurata e funzionante
+- [ ] **Quality Assurance:** suite di Test Unitari (xUnit) temporaneamente commentata dalla solution, in attesa di aggiornamento post-refactoring Clean Architecture
 - [x] **Connessione persistente multi-comando:** client e server mantengono la connessione aperta per l'intera sessione, con loop di lettura/scrittura su entrambi i lati
 - [x] **Logging con Serilog:** tracciamento eventi su console e file, con rotazione giornaliera e retention automatica dei log più vecchi
+- [x] **Clean Architecture:** refactoring strutturale in layer (Core, Infrastructure, Worker) in preparazione all'integrazione con UI Web (Blazor)
+- [x] **Fix Pipeline CI/CD:** risolti problemi di formattazione YAML e percorsi per GitHub Actions
 
 ## 🏗️ Architettura e Logica
+
+### Clean Architecture
+
+Per preparare l'applicazione all'integrazione futura con framework web come Blazor e a logiche di livello enterprise, il codice sorgente è stato diviso in layer con responsabilità rigorosamente separate:
+
+- **PlcBridge.Core:** Il "cuore" del dominio. Contiene interfacce astratte (`IPlcService`) e modelli fortemente tipizzati (es. `PlcSystemStatus`). Non ha alcuna dipendenza verso l'esterno.
+- **PlcBridge.Infrastructure:** Il "braccio operativo" che implementa i contratti del Core (es. comunicazione di rete, futuri driver Modbus/S7). Dipende dal Core ma non dal Web o dalla Console.
+- **PlcBridge.Worker:** Il progetto host d'ingresso, responsabile della configurazione (Dependency Injection, Serilog) e del ciclo di vita dell'applicazione.
 
 ### Il ciclo di vita del processo
 
@@ -131,6 +140,8 @@ Per rendere il software pronto per il web (Blazor) e per protocolli di automazio
 
 È stata aggiunta una suite di test che verifica ogni comando del PLC. Il codice non è più scritto "a vista", ma guidato dai test: se il test passa, la funzionalità è garantita. Grazie al disaccoppiamento introdotto con `IPlcController`, i test possono validare la logica di business isolatamente, senza dipendere dallo stack di rete.
 
+> **Nota:** in seguito al refactoring verso la Clean Architecture, il progetto `PlcBridge.Tests` è temporaneamente **escluso dalla solution** (commentato), perché i test esistenti erano scritti contro la struttura precedente. Andranno riscritti contro il nuovo contratto `IPlcController` prima di essere riattivati.
+
 ### Componenti
 
 | Componente | Descrizione |
@@ -143,47 +154,27 @@ Per rendere il software pronto per il web (Blazor) e per protocolli di automazio
 
 Lezioni raccolte durante lo sviluppo, utili come riferimento futuro.
 
-### 1. Errore di file bloccato (MSB3026)
-- **Problema:** il compilatore falliva perché l'eseguibile era in uso.
-- **Causa:** il server (`PlcBridge.exe`) era ancora attivo in background.
-- **Risoluzione:** `taskkill /F /IM PlcBridge.exe`, o preferibilmente terminazione corretta con `Ctrl+C`.
+### 1. Errori di compilazione C# (CS0579 - Duplicate Attributes)
+- **Problema:** Errore "L'attributo è duplicato" riferito ad `AssemblyInfo` e `TargetFramework` durante la divisione in progetti separati.
+- **Causa:** Il Default Compile Globbing di MSBuild cattura tutti i file `.cs` nelle sottocartelle. Lasciando il file `.csproj` principale nella radice della repo, quest'ultimo includeva e compilava erroneamente anche i file temporanei (`obj/`) generati dagli altri progetti appena creati (Core e Infrastructure).
+- **Risoluzione:** Spostato il progetto principale in una cartella dedicata (es. `PlcBridge.Worker`) in modo da isolarne il perimetro di compilazione e separarlo fisicamente dagli altri layer.
 
-### 2. Errori di compilazione C# (CS8803, CS1022, CS0260)
-- **Problema:** errori su "missing partial modifier" o "top-level statements".
-- **Causa:** parentesi graffe `}` fuori posto, che rompevano la struttura della classe.
-- **Risoluzione:** revisione gerarchica delle parentesi: la classe deve contenere tutto il codice.
-
-### 3. Git: "remote origin already exists"
-- **Problema:** impossibilità di aggiungere il remote durante la configurazione iniziale.
-- **Risoluzione:** `git remote set-url origin [URL]` sovrascrive il collegamento esistente in modo pulito.
-
-### 4. Gestione input nullo
-- **Problema:** warning del compilatore su possibili input nulli.
-- **Risoluzione:** utilizzo dell'operatore `?? string.Empty` per garantire sicurezza di tipo.
-
-### 5. Configurazione CI/CD (GitHub Actions)
-- **Problema:** incertezza sulla struttura delle cartelle.
-- **Risoluzione:** percorso esatto `.github/workflows/dotnet.yml`. Semaforo verde = codice validato.
-
-### 6. Installazione pacchetti NuGet
-- **Problema:** necessità di utilizzare librerie esterne (Spectre.Console).
-- **Risoluzione:** utilizzo del comando `dotnet add package Spectre.Console`. Fondamentale assicurarsi di essere nella cartella corretta (file `.csproj`) prima di eseguire il comando.
-
-### 7. Problemi di annidamento progetti (nesting issues)
+### 2. Problemi di annidamento progetti (nesting issues)
 - **Problema:** il progetto di test era stato creato dentro la cartella del progetto principale, causando errori `CS0579` (attributi duplicati) e conflitti di Assembly.
 - **Risoluzione:**
   - Creazione di una Solution (`.sln`) nella radice del repository.
   - Utilizzo di `dotnet sln add [progetto]` per gestire i due progetti come entità separate.
   - Esclusione esplicita della cartella di test dal progetto principale nel `.csproj`, per evitare la cross-compilazione.
 
-### 8. Errore "Non sono stati trovati progetti" durante `dotnet add reference`
-- **Problema:** il comando cercava una cartella, ma doveva puntare al file `.csproj` specifico.
-- **Risoluzione:** `dotnet add PlcBridge.Tests/PlcBridge.Tests.csproj reference PlcBridge.csproj`.
-
-### 9. Connessione interrotta al secondo comando (`IOException` / `SocketException 10053`)
+### 3. Connessione interrotta al secondo comando (`IOException` / `SocketException 10053`)
 - **Problema:** il client si disconnetteva con un'eccezione fatale non appena si tentava di inviare un secondo comando nella stessa sessione.
 - **Causa:** il server apriva la connessione con `using TcpClient`/`using NetworkStream` **dentro** il loop `while (true)` di accettazione, gestendo un solo comando per connessione. Al termine dell'iterazione, gli `using` chiudevano automaticamente il socket, mentre il client presumeva la connessione ancora attiva.
 - **Risoluzione:** aggiunto un ciclo interno lato server (`while (client.Connected)`) che continua a leggere/rispondere sulla stessa connessione finché il client non la chiude esplicitamente (`bytesRead == 0`) o si disconnette bruscamente (gestito con `catch (IOException)` senza terminare il processo server).
+
+### 4. Crash a runtime con Spectre.Console (`System.InvalidOperationException`)
+- **Problema:** L'app crasha tentando di stampare a video con messaggio: `Encountered malformed markup tag`.
+- **Causa:** Un tag di formattazione non valido nella stringa passata ad `AnsiConsole.MarkupLine`. La libreria interpreta tutto ciò che è tra parentesi quadre `[]` come codice colore/stile (es. `[/ red]` invece di `[/red]`).
+- **Risoluzione:** Rimosso lo spazio all'interno del tag. Se si stampano variabili dinamiche (o log JSON) che potrebbero contenere parentesi quadre testuali, utilizzare sempre `Markup.Escape()`.
 
 ## 💭 Riflessioni Tecniche
 
@@ -195,13 +186,14 @@ L'adozione di Spectre.Console ha trasformato il Client da un semplice script di 
 
 La gestione della struttura Solution (`.sln`) ha insegnato quanto sia critica la configurazione ambientale: un progetto ben organizzato non è solo più leggibile, è anche più facile da compilare e testare.
 
-Il refactoring verso `IPlcController` e la Dependency Injection ha segnato il passaggio da un semplice script funzionante a un'architettura pensata per l'evoluzione: separare "cosa fa" il PLC da "come lo fa" apre la strada a nuove implementazioni (OPC UA, interfacce web) senza toccare la logica di business già testata. Il "motore" è ora pronto per essere loggato professionalmente con Serilog.
+Il refactoring verso la Clean Architecture ha dimostrato che un software ben progettato non è solo quello che funziona oggi, ma quello le cui fondamenta sono pronte ad accogliere nuove tecnologie (come Blazor) senza dover riscrivere il cuore del dominio. Isolare i progetti nelle proprie cartelle ha inoltre svelato i meccanismi interni di MSBuild (Globbing) e i comportamenti della CLI .NET.
 
 Il passaggio da connessioni "usa e getta" a una sessione persistente ha chiarito una distinzione fondamentale nella programmazione di rete: la differenza tra "un protocollo che risponde a un comando" e "un protocollo che sostiene una conversazione". Il secondo richiede di pensare esplicitamente al ciclo di vita della connessione su entrambi i lati, non solo alla singola transazione.
 
 ## 🛠️ Tech Stack
 
 - C# / .NET 10
+- Clean Architecture (Core, Infrastructure, Web/Worker)
 - TCP/IP Sockets
 - Spectre.Console (TUI)
 - Dependency Injection / Inversion of Control
@@ -210,17 +202,13 @@ Il passaggio da connessioni "usa e getta" a una sessione persistente ha chiarito
 
 ## 🖼️ Screenshot
 
-**Client — avvio pompa e system status:**
+**Server — sessione completa di comandi ricevuti su connessione persistente:**
 
-![Client controllo pompa e stato sistema](docs/images/client-screenshot-1.png)
+![Server: log di sessione con comandi READ/START/STOP/SYSTEM_STATUS](docs/images/server-terminal.png)
 
-**Client — riepilogo comandi e risposte:**
+**Client — TUI di supervisione (HMI Terminal) con tabelle comando/risposta:**
 
-![Client riepilogo comandi](docs/images/client-screenshot-2.png)
-
-**Server — ricezione comando e attuazione:**
-
-![Server comando attuatore](docs/images/server-screenshot.png)
+![Client: TUI Spectre.Console con tabelle Parametro/Stato e Valore](docs/images/client-terminal-monitor.png)
 
 ---
 
