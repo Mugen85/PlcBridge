@@ -35,3 +35,24 @@
 2026-07-27 19:26:00.640 +02:00 [DBG] Hosting stopping
 2026-07-27 19:26:00.641 +02:00 [INF] Application is shutting down...
 2026-07-27 19:26:00.643 +02:00 [DBG] Hosting stopped
+2026-07-27 19:39:34.404 +02:00 [INF] Bootstrapping PlcBridge Worker...
+2026-07-27 19:39:35.464 +02:00 [DBG] Hosting starting
+2026-07-27 19:39:35.497 +02:00 [INF] Avvio del Polling Worker in background...
+2026-07-27 19:39:35.499 +02:00 [WRN] PLC non connesso. Tentativo di connessione in corso...
+2026-07-27 19:39:35.503 +02:00 [INF] Application started. Press Ctrl+C to shut down.
+2026-07-27 19:39:35.507 +02:00 [INF] Hosting environment: Production
+2026-07-27 19:39:35.509 +02:00 [INF] Content root path: C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Worker
+2026-07-27 19:39:35.510 +02:00 [DBG] Hosting started
+2026-07-27 19:39:36.510 +02:00 [INF] Connessione al PLC stabilita con successo.
+2026-07-27 19:39:36.574 +02:00 [DBG] Dato dal campo -> PRESSURE: 11.3 Bar
+2026-07-27 19:39:37.142 +02:00 [DBG] Dato dal campo -> PRESSURE: 10.7 Bar
+2026-07-27 19:39:37.705 +02:00 [DBG] Dato dal campo -> PRESSURE: 13.1 Bar
+2026-07-27 19:39:38.274 +02:00 [DBG] Dato dal campo -> PRESSURE: 14 Bar
+2026-07-27 19:39:38.838 +02:00 [DBG] Dato dal campo -> PRESSURE: 11.2 Bar
+2026-07-27 19:39:39.401 +02:00 [DBG] Dato dal campo -> PRESSURE: 12.2 Bar
+2026-07-27 19:39:39.975 +02:00 [DBG] Dato dal campo -> PRESSURE: 12.7 Bar
+2026-07-27 19:39:40.552 +02:00 [DBG] Dato dal campo -> PRESSURE: 11.6 Bar
+2026-07-27 19:39:40.631 +02:00 [INF] Segnale di uscita (ESC) ricevuto. Spegnimento dei servizi in corso...
+2026-07-27 19:39:40.633 +02:00 [DBG] Hosting stopping
+2026-07-27 19:39:40.634 +02:00 [INF] Application is shutting down...
+2026-07-27 19:39:40.637 +02:00 [DBG] Hosting stopped
