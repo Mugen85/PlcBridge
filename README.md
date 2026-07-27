@@ -180,4 +180,4 @@ Il refactoring verso la Clean Architecture si sta confermando cruciale: le inter
 
 ---
 
-*Progetto sviluppato come parte del percorso di crescita professionale nel settore Industrial Software Engineering.*git add .
+*Progetto sviluppato come parte del percorso di crescita professionale nel settore Industrial Software Engineering.*
