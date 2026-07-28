@@ -10,6 +10,7 @@
         "dependencies": {
           "Microsoft.NET.Test.Sdk": "17.10.0",
           "PlcBridge.Core": "1.0.0",
+          "PlcBridge.Infrastructure": "1.0.0",
           "xunit": "2.9.0"
         },
         "runtime": {
@@ -338,6 +339,17 @@
             "fileVersion": "1.0.0.0"
           }
         }
+      },
+      "PlcBridge.Infrastructure/1.0.0": {
+        "dependencies": {
+          "PlcBridge.Core": "1.0.0"
+        },
+        "runtime": {
+          "PlcBridge.Infrastructure.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
       }
     }
   },
@@ -425,6 +437,11 @@
       "hashPath": "xunit.extensibility.execution.2.9.0.nupkg.sha512"
     },
     "PlcBridge.Core/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "PlcBridge.Infrastructure/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

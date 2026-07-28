@@ -100,3 +100,5 @@ C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Tests\obj\Debug\net10.0\r
 C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Tests\obj\Debug\net10.0\PlcBridge.Tests.pdb
 C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Tests\obj\Debug\net10.0\PlcBridge.Tests.genruntimeconfig.cache
 C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Tests\obj\Debug\net10.0\ref\PlcBridge.Tests.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Tests\bin\Debug\net10.0\PlcBridge.Infrastructure.dll
+C:\PROGETTI CSHARP\GitHub-Projects\PlcBridge\PlcBridge.Tests\bin\Debug\net10.0\PlcBridge.Infrastructure.pdb

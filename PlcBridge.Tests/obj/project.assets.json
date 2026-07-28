@@ -399,6 +399,19 @@
         "runtime": {
           "bin/placeholder/PlcBridge.Core.dll": {}
         }
+      },
+      "PlcBridge.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "PlcBridge.Core": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/PlcBridge.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PlcBridge.Infrastructure.dll": {}
+        }
       }
     }
   },
@@ -834,12 +847,18 @@
       "type": "project",
       "path": "../PlcBridge.Core/PlcBridge.Core.csproj",
       "msbuildProject": "../PlcBridge.Core/PlcBridge.Core.csproj"
+    },
+    "PlcBridge.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj",
+      "msbuildProject": "../PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
       "Microsoft.NET.Test.Sdk >= 17.10.0",
       "PlcBridge.Core >= 1.0.0",
+      "PlcBridge.Infrastructure >= 1.0.0",
       "xunit >= 2.9.0",
       "xunit.runner.visualstudio >= 2.8.2"
     ]
@@ -880,6 +899,9 @@
           "projectReferences": {
             "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Core\\PlcBridge.Core.csproj": {
               "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Core\\PlcBridge.Core.csproj"
+            },
+            "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Infrastructure\\PlcBridge.Infrastructure.csproj": {
+              "projectPath": "C:\\PROGETTI CSHARP\\GitHub-Projects\\PlcBridge\\PlcBridge.Infrastructure\\PlcBridge.Infrastructure.csproj"
             }
           }
         }

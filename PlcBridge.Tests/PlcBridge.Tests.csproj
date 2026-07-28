@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PlcBridge.Core\PlcBridge.Core.csproj" />
+    <ProjectReference Include="..\PlcBridge.Infrastructure\PlcBridge.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
