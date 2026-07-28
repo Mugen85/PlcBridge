@@ -1,6 +1,6 @@
 # PlcBridge
 
-![Build Status](https://github.com/Mugen85/PlcBridge/actions/workflows/dotnet.yml/badge.svg) ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4) ![Tests](https://img.shields.io/badge/tests-xUnit-25A162)
+![Build Status](https://github.com/Mugen85/PlcBridge/actions/workflows/dotnet.yml/badge.svg) ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4) ![Tests](https://img.shields.io/badge/tests-5%20passing-25A162)
 
 PlcBridge è uno strumento di studio e simulazione sviluppato per colmare la distanza tra software gestionale (.NET) e hardware industriale (PLC).
 
@@ -18,7 +18,7 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 - **Architettura disaccoppiata e Clean Architecture:** logica del PLC astratta dietro interfacce (`IPlcDriver`) e struttura a layer (Core, Infrastructure, Worker, Tests) per un disaccoppiamento totale tra logica di dominio, implementazione hardware e strato di hosting
 - **.NET Generic Host:** gestione enterprise del ciclo di vita dell'applicazione, Dependency Injection nativa e configurazione centralizzata
 - **Thread-Safety & Graceful Shutdown:** utilizzo del costrutto `lock` per proteggere i dati concorrenti tra Worker e UI, e utilizzo dei `CancellationToken` per terminare le connessioni in modo pulito
-- **Test Unitari:** suite xUnit che verifica ogni comando del PLC senza dover aprire porte di rete o socket
+- **Test Unitari:** suite xUnit riattivata che verifica ogni comando del PLC tramite `IPlcDriver`, senza dover aprire porte di rete o socket
 - **CI/CD Ready:** pipeline GitHub Actions integrata per la validazione automatica del codice ad ogni modifica
 
 ## 🚀 Come iniziare
@@ -40,7 +40,11 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 
 L'applicazione avvierà automaticamente il motore di polling in background e mostrerà i log a schermo. Per terminare il processo in modo pulito (Graceful Shutdown), premere **ESC**.
 
-> ⚠️ La suite di test (`PlcBridge.Tests`) è momentaneamente **commentata dalla solution**: va aggiornata per allinearla alla nuova Clean Architecture (in particolare ai contratti di `IPlcDriver` dopo il refactoring). Verrà riattivata a breve.
+Per eseguire la suite di test unitari:
+```
+cd PlcBridge.Tests
+dotnet test
+```
 
 ## ✅ Stato del Progetto
 
@@ -58,7 +62,7 @@ L'applicazione avvierà automaticamente il motore di polling in background e mos
 - [x] **Fix Pipeline CI/CD:** risolti problemi di formattazione YAML e percorsi per GitHub Actions
 - [x] **Refactoring .NET Generic Host:** migrazione da script procedurale ad architettura a Host con `BackgroundService` per il polling asincrono
 - [x] **Thread-Safety:** gestione concorrenza dati tramite `lock` e spegnimento controllato tramite `CancellationToken`
-- [ ] **Quality Assurance:** suite di Test Unitari (xUnit) in attesa di refactoring post-Clean Architecture
+- [x] **Quality Assurance:** suite di Test Unitari (xUnit) riallineata al contratto `IPlcDriver` e riattivata nella solution
 
 ## 🏗️ Architettura e Logica
 
@@ -69,6 +73,13 @@ Per preparare l'applicazione all'integrazione futura con framework web come Blaz
 - **PlcBridge.Core:** Il "cuore" del dominio. Contiene interfacce astratte (`IPlcDriver`) e modelli fortemente tipizzati (es. `PlcTag`, `ConnectionState`). Non ha alcuna dipendenza verso l'esterno o verso la tecnologia di rete.
 - **PlcBridge.Infrastructure:** Il "braccio operativo" che implementa i contratti del Core (attualmente un simulatore, in futuro driver Modbus/S7). Dipende dal Core ma non dal Web o dalla Console.
 - **PlcBridge.Worker:** Il progetto host d'ingresso. Non contiene logica di business, ma assembla i pezzi configurando la Dependency Injection, il motore di polling (`PlcPollingWorker`) e la UI.
+
+| Componente | Descrizione |
+|---|---|
+| **PlcBridge.Core** | Interfacce (`IPlcDriver`) e modelli di dominio (`PlcTag`, `ConnectionState`). Nessuna dipendenza esterna. |
+| **PlcBridge.Infrastructure** | Implementazione concreta dei contratti del Core (`SimulatorPlcDriver`; in futuro driver Modbus/S7). |
+| **PlcBridge.Worker** | Host `.NET Generic Host`: configura DI, Serilog e il `BackgroundService` di polling (`PlcPollingWorker`); espone la TUI con Spectre.Console. |
+| **PlcBridge.Tests** | Suite xUnit che valida `IPlcDriver` in isolamento, senza dipendenze di rete o socket. |
 
 ### Dal paradigma Server/Client al Generic Host
 
@@ -107,6 +118,18 @@ Sia l'host che i worker scrivono i propri eventi tramite **Serilog**, con due de
 - **Console:** output leggibile a runtime, con timestamp e livello di log in formato compatto (`[HH:mm:ss LVL] Messaggio`)
 - **File:** un file di log per giorno (`logs/plcbridge-YYYYMMDD.txt`), grazie a `RollingInterval.Day`
 - **Retention Limit:** mantiene solo gli ultimi 3 file di log per evitare il riempimento dei dischi, cancellando automaticamente i più vecchi
+
+### Qualità: Unit Testing con xUnit
+
+Il progetto `PlcBridge.Tests` è stato riallineato al contratto `IPlcDriver` post-refactoring Clean Architecture ed è ora **riattivato nella solution**. La suite verifica il comportamento del `SimulatorPlcDriver` in isolamento, senza aprire porte di rete o socket:
+
+- **`ConnectAsync_ShouldSetStateToConnected`:** verifica che dopo la connessione lo stato passi a `ConnectionState.Connected`
+- **`DisconnectAsync_ShouldSetStateToDisconnected`:** verifica che la disconnessione riporti lo stato a `ConnectionState.Disconnected`
+- **`ReadTagAsync_WhenNotConnected_ShouldThrowException`:** verifica che una lettura tentata senza connessione attiva sollevi una `InvalidOperationException`
+- **`ReadTagAsync_Pressure_ShouldReturnDoubleValue`:** verifica che il tag `PRESSURE` restituisca un valore `double` compreso nel range simulato (10.0–15.0 Bar)
+- **`WriteAndRead_PumpStatus_ShouldUpdateValue`:** verifica che una scrittura sul tag `PUMP_STATUS` sia effettivamente persistita e rileggibile
+
+Grazie al disaccoppiamento introdotto da `IPlcDriver`, ogni test istanzia direttamente il `SimulatorPlcDriver` tramite l'interfaccia, rendendo la suite veloce e indipendente dallo stack di rete o dall'host.
 
 ## 🐛 Troubleshooting Log
 
