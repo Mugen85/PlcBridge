@@ -10,17 +10,17 @@ namespace PlcBridge.Worker.Services;
 
 /// <summary>
 /// Questo servizio gira in background indipendentemente dalla UI.
-/// Il suo scopo è mantenere viva la connessione col PLC e leggere i dati.
+/// Il suo scopo è effettuare il polling periodico dei dati del PLC tramite IPlcService.
 /// </summary>
 public class PlcPollingWorker : BackgroundService
 {
-    private readonly IPlcDriver _plcDriver;
+    private readonly IPlcService _plcService;
     private readonly ILogger<PlcPollingWorker> _logger;
 
-    // Il motore di Dependency Injection ci inietta in automatico il Driver e il Logger
-    public PlcPollingWorker(IPlcDriver plcDriver, ILogger<PlcPollingWorker> logger)
+    // Il motore di Dependency Injection ci inietta in automatico il servizio PLC e il Logger
+    public PlcPollingWorker(IPlcService plcService, ILogger<PlcPollingWorker> logger)
     {
-        _plcDriver = plcDriver;
+        _plcService = plcService;
         _logger = logger;
     }
 
@@ -33,31 +33,28 @@ public class PlcPollingWorker : BackgroundService
         {
             try
             {
-                // Gestione resiliente della connessione
-                if (_plcDriver.State != ConnectionState.Connected)
-                {
-                    _logger.LogWarning("PLC non connesso. Tentativo di connessione in corso...");
-                    await _plcDriver.ConnectAsync(stoppingToken);
-                    _logger.LogInformation("Connessione al PLC stabilita con successo.");
-                }
+                // Polling industriale dello stato di sistema tramite l'interfaccia di dominio
+                var status = await _plcService.GetSystemStatusAsync();
+                
+                _logger.LogDebug(
+                    "Polling dal campo -> Temp: {Temp}°C | Pressione: {Pressure} BAR | Pompa: {IsRunning}", 
+                    status.Temperature, 
+                    status.Pressure, 
+                    status.IsPumpRunning
+                );
 
-                // Polling vero e proprio (per ora leggiamo la pressione a scopo di test)
-                var pressure = await _plcDriver.ReadTagAsync("PRESSURE", stoppingToken);
-                _logger.LogDebug("Dato dal campo -> PRESSURE: {Value} Bar", pressure);
-
-                // Pausa industriale (es. ciclo di lettura ogni 500ms)
-                await Task.Delay(500, stoppingToken);
+                // Pausa industriale (es. ciclo di lettura ogni 1000ms)
+                await Task.Delay(1000, stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "Errore di comunicazione nel ciclo di polling. Riprovo...");
+                _logger.LogError(ex, "Errore di comunicazione nel ciclo di polling in background. Riprovo...");
                 
-                // Backoff: se c'è un errore, aspettiamo un po' prima di intasare la rete di tentativi
+                // Backoff in caso di errore di comunicazione
                 await Task.Delay(2000, stoppingToken);
             }
         }
 
-        _logger.LogInformation("Arresto del Polling Worker. Chiusura connessione PLC...");
-        await _plcDriver.DisconnectAsync();
+        _logger.LogInformation("Arresto del Polling Worker completato.");
     }
 }

@@ -1,86 +1,84 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Microsoft.Extensions.Logging.Abstractions;
 using PlcBridge.Core.Interfaces;
 using PlcBridge.Core.Models;
-using PlcBridge.Infrastructure.Drivers;
+using PlcBridge.Infrastructure.Services;
 using Xunit;
 
 namespace PlcBridge.Tests;
 
-public class PlcDriverTests
+/// <summary>
+/// Suite di test unitari xUnit per validare il comportamento del servizio PLC simulato.
+/// Isola la logica di business utilizzando il NullLogger.
+/// </summary>
+public class PlcServiceTests
 {
+    private readonly IPlcService _plcService;
+
+    public PlcServiceTests()
+    {
+        // Inseriamo il logger nullo per soddisfare le dipendenze del costruttore senza log su disco nei test
+        var logger = NullLogger<SimulatedPlcService>.Instance;
+        _plcService = new SimulatedPlcService(logger);
+    }
+
     [Fact]
-    public async Task ConnectAsync_ShouldSetStateToConnected()
+    public async Task StartPumpAsync_ShouldSetPumpRunningToTrue()
+    {
+        // Act
+        var result = await _plcService.StartPumpAsync();
+        var status = await _plcService.GetSystemStatusAsync();
+
+        // Assert
+        Assert.True(result);
+        Assert.True(status.IsPumpRunning);
+    }
+
+    [Fact]
+    public async Task StopPumpAsync_ShouldSetPumpRunningToFalse()
     {
         // Arrange
-        IPlcDriver driver = new SimulatorPlcDriver();
-        using var cts = new CancellationTokenSource();
+        await _plcService.StartPumpAsync();
 
         // Act
-        await driver.ConnectAsync(cts.Token);
+        var result = await _plcService.StopPumpAsync();
+        var status = await _plcService.GetSystemStatusAsync();
 
         // Assert
-        Assert.Equal(ConnectionState.Connected, driver.State);
+        Assert.False(result);
+        Assert.False(status.IsPumpRunning);
     }
 
     [Fact]
-    public async Task DisconnectAsync_ShouldSetStateToDisconnected()
+    public async Task ReadPressureAsync_ShouldReturnValidRange()
     {
-        // Arrange
-        IPlcDriver driver = new SimulatorPlcDriver();
-        using var cts = new CancellationTokenSource();
-        await driver.ConnectAsync(cts.Token);
-
         // Act
-        await driver.DisconnectAsync();
+        var pressure = await _plcService.ReadPressureAsync();
 
         // Assert
-        Assert.Equal(ConnectionState.Disconnected, driver.State);
+        Assert.True(pressure >= 10.0 && pressure <= 15.0, $"Pressione fuori range: {pressure}");
     }
 
     [Fact]
-    public async Task ReadTagAsync_WhenNotConnected_ShouldThrowException()
+    public async Task ReadTemperatureAsync_ShouldReturnValidRange()
     {
-        // Arrange
-        IPlcDriver driver = new SimulatorPlcDriver();
-        using var cts = new CancellationTokenSource();
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => driver.ReadTagAsync("PRESSURE", cts.Token));
-    }
-
-    [Fact]
-    public async Task ReadTagAsync_Pressure_ShouldReturnDoubleValue()
-    {
-        // Arrange
-        IPlcDriver driver = new SimulatorPlcDriver();
-        using var cts = new CancellationTokenSource();
-        await driver.ConnectAsync(cts.Token);
-
         // Act
-        var result = await driver.ReadTagAsync("PRESSURE", cts.Token);
+        var temp = await _plcService.ReadTemperatureAsync();
 
         // Assert
-        Assert.IsType<double>(result);
-        var pressureValue = (double)result;
-        Assert.True(pressureValue >= 10.0 && pressureValue <= 15.0, "La pressione simulata dovrebbe essere tra 10.0 e 15.0");
+        Assert.True(temp >= 20.0 && temp <= 30.0, $"Temperatura fuori range: {temp}");
     }
 
     [Fact]
-    public async Task WriteAndRead_PumpStatus_ShouldUpdateValue()
+    public async Task GetSystemStatusAsync_ShouldReturnCompleteSnapshot()
     {
-        // Arrange
-        IPlcDriver driver = new SimulatorPlcDriver();
-        using var cts = new CancellationTokenSource();
-        await driver.ConnectAsync(cts.Token); // Connettendo, lo stato della pompa parte a 'false'
-
-        // Act - Accendiamo la pompa
-        await driver.WriteTagAsync("PUMP_STATUS", true, cts.Token);
-        var status = await driver.ReadTagAsync("PUMP_STATUS", cts.Token);
+        // Act
+        var status = await _plcService.GetSystemStatusAsync();
 
         // Assert
-        Assert.IsType<bool>(status);
-        Assert.True((bool)status, "Il PUMP_STATUS dovrebbe essere true dopo la scrittura.");
+        Assert.NotNull(status);
+        Assert.IsType<PlcSystemStatus>(status);
+        Assert.True(status.Pressure >= 10.0 && status.Pressure <= 15.0);
+        Assert.True(status.Temperature >= 20.0 && status.Temperature <= 30.0);
     }
 }
