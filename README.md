@@ -36,7 +36,7 @@ Nasce come banco di prova per la comunicazione TCP/IP e i modelli Request-Respon
    ```
 3. Avvia il sistema:
    ```
-   dotnet run
+   dotnet run --project PlcBridge.Worker/PlcBridge.csproj
    ```
 
 L'applicazione avvia in automatico il polling interno e il TCP Server sulla porta 5050, mostrando i log a schermo. Per terminare in modo pulito (Graceful Shutdown), premere **ESC**.
