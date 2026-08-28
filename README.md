@@ -8,17 +8,18 @@ Questo progetto nasce come banco di prova per testare la comunicazione TCP/IP e 
 
 ## ✨ Caratteristiche
 
-- **Simulatore Server/PLC Stateful:** gestione asincrona delle connessioni sulla porta 5000, con memoria interna che simula i registri di un vero PLC
+- **Simulatore Server/PLC Stateful:** gestione asincrona delle connessioni sulla porta 5000, con memoria interna thread-safe che simula i registri di un vero PLC
 - **Connessione persistente Client-Server:** una singola connessione TCP rimane attiva per l'intera sessione, permettendo l'invio di più comandi consecutivi senza riconnettersi
-- **Logging strutturato con Serilog:** eventi tracciati su console e su file, con rotazione giornaliera e pulizia automatica dei log più vecchi (retention di 3 file). L'integrazione è ora nativa nell'Host dell'applicazione
+- **Logging strutturato con Serilog:** eventi tracciati su console e su file, con rotazione giornaliera e pulizia automatica dei log più vecchi (retention di 3 file), integrato nativamente nell'Host dell'applicazione
 - **Client di Monitoraggio:** interfaccia a TUI (Terminal User Interface) con Spectre.Console per interrogare e controllare lo stato della macchina in modo leggibile e strutturato
 - **Comandi di lettura:** `READ_PRESSURE`, `READ_TEMP`, `SYSTEM_STATUS`
 - **Comandi di controllo attuatori:** `START_PUMP`, `STOP_PUMP` per l'interazione bidirezionale tipica di una vera HMI
 - **Protocollo Polling e BackgroundService:** implementazione di una logica Master-Slave per la richiesta e l'invio dati, eseguita in un thread asincrono separato dalla UI
-- **Architettura disaccoppiata e Clean Architecture:** logica del PLC astratta dietro interfacce (`IPlcDriver`) e struttura a layer (Core, Infrastructure, Worker, Tests) per un disaccoppiamento totale tra logica di dominio, implementazione hardware e strato di hosting
+- **Servizio di dominio tipizzato:** logica del PLC astratta dietro `IPlcService`, con lo stato del sistema rappresentato dal record immutabile `PlcSystemStatus`, in sostituzione del precedente modello generico a tag
+- **Clean Architecture:** struttura a layer (Core, Infrastructure, Worker, Tests) per un disaccoppiamento totale tra logica di dominio, implementazione hardware e strato di hosting
 - **.NET Generic Host:** gestione enterprise del ciclo di vita dell'applicazione, Dependency Injection nativa e configurazione centralizzata
 - **Thread-Safety & Graceful Shutdown:** utilizzo del costrutto `lock` per proteggere i dati concorrenti tra Worker e UI, e utilizzo dei `CancellationToken` per terminare le connessioni in modo pulito
-- **Test Unitari:** suite xUnit riattivata che verifica ogni comando del PLC tramite `IPlcDriver`, senza dover aprire porte di rete o socket
+- **Test Unitari:** suite xUnit riattivata che verifica ogni comando del PLC tramite `IPlcService`, senza dover aprire porte di rete o socket
 - **CI/CD Ready:** pipeline GitHub Actions integrata per la validazione automatica del codice ad ogni modifica
 
 ## 🚀 Come iniziare
@@ -55,47 +56,52 @@ dotnet test
 - [x] **Version Control:** Repository Git collegata correttamente al remoto GitHub
 - [x] **UI Engineering:** Implementazione TUI (Terminal User Interface) con Spectre.Console
 - [x] **Stateful Server & Controllo Attuatori:** memoria di stato interna e comandi di scrittura (`START_PUMP`, `STOP_PUMP`)
-- [x] **Refactoring Dependency Injection:** introduzione di `IPlcController` (poi evoluto in `IPlcDriver`) e Inversion of Control
+- [x] **Refactoring Dependency Injection:** introduzione di `IPlcDriver` (poi evoluto in `IPlcService`) e Inversion of Control
 - [x] **Connessione persistente multi-comando:** client e server mantengono la connessione aperta per l'intera sessione, con loop di lettura/scrittura su entrambi i lati
 - [x] **Logging con Serilog:** tracciamento eventi su console e file, con rotazione giornaliera e retention automatica dei log più vecchi
 - [x] **Clean Architecture:** refactoring strutturale in layer (Core, Infrastructure, Worker) in preparazione all'integrazione con UI Web (Blazor)
 - [x] **Fix Pipeline CI/CD:** risolti problemi di formattazione YAML e percorsi per GitHub Actions
 - [x] **Refactoring .NET Generic Host:** migrazione da script procedurale ad architettura a Host con `BackgroundService` per il polling asincrono
 - [x] **Thread-Safety:** gestione concorrenza dati tramite `lock` e spegnimento controllato tramite `CancellationToken`
-- [x] **Quality Assurance:** suite di Test Unitari (xUnit) riallineata al contratto `IPlcDriver` e riattivata nella solution
+- [x] **Raffinamento del contratto di dominio:** sostituzione del modello generico a tag (`IPlcDriver`, `PlcTag`) con un servizio di dominio dedicato (`IPlcService`, `PlcSystemStatus`)
+- [x] **Quality Assurance:** suite di Test Unitari (xUnit) riallineata al contratto `IPlcService` e riattivata nella solution
 
 ## 🏗️ Architettura e Logica
 
 ### Clean Architecture
 
-Per preparare l'applicazione all'integrazione futura con framework web come Blazor e a logiche di livello enterprise, il codice sorgente è stato diviso in layer con responsabilità rigorosamente separate:
+Per preparare l'applicazione all'integrazione futura con framework web come Blazor e a logiche di livello enterprise, il codice sorgente è diviso in layer con responsabilità rigorosamente separate:
 
-- **PlcBridge.Core:** Il "cuore" del dominio. Contiene interfacce astratte (`IPlcDriver`) e modelli fortemente tipizzati (es. `PlcTag`, `ConnectionState`). Non ha alcuna dipendenza verso l'esterno o verso la tecnologia di rete.
-- **PlcBridge.Infrastructure:** Il "braccio operativo" che implementa i contratti del Core (attualmente un simulatore, in futuro driver Modbus/S7). Dipende dal Core ma non dal Web o dalla Console.
-- **PlcBridge.Worker:** Il progetto host d'ingresso. Non contiene logica di business, ma assembla i pezzi configurando la Dependency Injection, il motore di polling (`PlcPollingWorker`) e la UI.
+- **PlcBridge.Core:** Il "cuore" del dominio. Contiene esclusivamente contratti astratti (`IPlcService`) e modelli immutabili fortemente tipizzati (es. il record `PlcSystemStatus`). Non ha alcuna dipendenza verso l'esterno (database, rete o console).
+- **PlcBridge.Infrastructure:** Il "braccio operativo" che implementa i contratti del Core. Il `SimulatedPlcService` gestisce, in modo thread-safe, lo stato di pompe, temperature e pressioni simulate. Dipende dal Core ma non dal Web o dalla Console.
+- **PlcBridge.Worker:** Il progetto host d'ingresso. Non contiene logica di business, ma assembla i pezzi configurando la Dependency Injection, Serilog, il motore di polling (`PlcPollingWorker`) e la UI.
 
 | Componente | Descrizione |
 |---|---|
-| **PlcBridge.Core** | Interfacce (`IPlcDriver`) e modelli di dominio (`PlcTag`, `ConnectionState`). Nessuna dipendenza esterna. |
-| **PlcBridge.Infrastructure** | Implementazione concreta dei contratti del Core (`SimulatorPlcDriver`; in futuro driver Modbus/S7). |
+| **PlcBridge.Core** | Contratti (`IPlcService`) e modelli di dominio immutabili (`PlcSystemStatus`). Nessuna dipendenza esterna. |
+| **PlcBridge.Infrastructure** | Implementazione concreta e thread-safe dei contratti del Core (`SimulatedPlcService`; in futuro driver Modbus/S7). |
 | **PlcBridge.Worker** | Host `.NET Generic Host`: configura DI, Serilog e il `BackgroundService` di polling (`PlcPollingWorker`); espone la TUI con Spectre.Console. |
-| **PlcBridge.Tests** | Suite xUnit che valida `IPlcDriver` in isolamento, senza dipendenze di rete o socket. |
+| **PlcBridge.Tests** | Suite xUnit che valida `IPlcService` in isolamento, senza dipendenze di rete o socket. |
 
 ### Dal paradigma Server/Client al Generic Host
 
 L'applicazione è evoluta da un semplice script con argomenti da riga di comando (`if (args[0] == "server")`) a un'applicazione industriale basata su .NET Generic Host.
 
-Il cuore del sistema ora è un `BackgroundService` (`PlcPollingWorker`) che gira su un thread separato, garantendo che le operazioni di rete asincrone (le interrogazioni al PLC) non blocchino mai il thread principale dedicato all'interfaccia utente.
+Il cuore del sistema è un `BackgroundService` (`PlcPollingWorker`) che gira su un thread separato, garantendo che le operazioni di rete asincrone (le interrogazioni al PLC) non blocchino mai il thread principale dedicato all'interfaccia utente.
+
+### Dal modello a tag al servizio di dominio (`IPlcService`)
+
+La prima versione del Core esponeva un contratto generico basato su tag (`IPlcDriver`, `PlcTag`), pensato per essere agnostico rispetto al protocollo industriale sottostante. Questo approccio è stato sostituito da un'interfaccia di dominio più espressiva e sicura: `IPlcService`, che opera direttamente su un record immutabile (`PlcSystemStatus`) rappresentante lo stato completo della macchina (temperatura, pressione, stato pompa). Il risultato è un contratto fortemente tipizzato, più leggibile e meno soggetto a errori rispetto all'accesso per chiave stringa tipico del modello a tag.
 
 ### Thread-Safety e Concorrenza (il costrutto `lock`)
 
 Separando la UI dal Worker di rete, si crea un problema di concorrenza: la UI legge costantemente i valori per aggiornare lo schermo, mentre il Worker li sovrascrive quando riceve nuovi dati.
 
-Per evitare Race Condition o letture di memoria corrotte, il modello `PlcTag` implementa un semaforo interno (`lock (_syncLock)`). Questo assicura che gli aggiornamenti siano operazioni atomiche: Worker e UI non entreranno mai in collisione.
+Per evitare Race Condition o letture di memoria corrotte, il `SimulatedPlcService` implementa un semaforo interno (`lock` dedicato) che protegge l'accesso ai registri simulati. Questo assicura che gli aggiornamenti siano operazioni atomiche, anche in previsione di futuri client TCP concorrenti oltre al worker di background.
 
 ### Il ciclo di vita del processo e i `CancellationToken`
 
-Tutte le operazioni asincrone e i loop infiniti sono ora governati da un `CancellationToken`. Se viene richiesta la chiusura dell'app (es. pressione del tasto ESC), il token propaga il segnale a tutti i layer. Questo previene il fenomeno dei "task zombie", chiudendo in modo pulito le socket di rete e liberando le risorse di sistema. Nelle versioni iniziali, terminare male il processo (es. con `taskkill`) manteneva la porta 5000 occupata.
+Tutte le operazioni asincrone e i loop infiniti sono governati da un `CancellationToken`. Se viene richiesta la chiusura dell'app (es. pressione del tasto ESC), il token propaga il segnale a tutti i layer. Questo previene il fenomeno dei "task zombie", chiudendo in modo pulito le socket di rete e liberando le risorse di sistema. Nelle versioni iniziali, terminare male il processo (es. con `taskkill`) manteneva la porta 5000 occupata.
 
 ### Protocollo Request-Response e Polling
 
@@ -113,7 +119,7 @@ La primissima implementazione apriva e chiudeva una connessione TCP per ogni sin
 
 ### Logging strutturato e rotazione dei log con Serilog
 
-Sia l'host che i worker scrivono i propri eventi tramite **Serilog**, con due destinazioni (sink) configurate contemporaneamente:
+Sia l'host che i worker scrivono i propri eventi tramite **Serilog**, configurato centralmente nel layer Worker, con due destinazioni (sink) attive contemporaneamente:
 
 - **Console:** output leggibile a runtime, con timestamp e livello di log in formato compatto (`[HH:mm:ss LVL] Messaggio`)
 - **File:** un file di log per giorno (`logs/plcbridge-YYYYMMDD.txt`), grazie a `RollingInterval.Day`
@@ -121,15 +127,15 @@ Sia l'host che i worker scrivono i propri eventi tramite **Serilog**, con due de
 
 ### Qualità: Unit Testing con xUnit
 
-Il progetto `PlcBridge.Tests` è stato riallineato al contratto `IPlcDriver` post-refactoring Clean Architecture ed è ora **riattivato nella solution**. La suite verifica il comportamento del `SimulatorPlcDriver` in isolamento, senza aprire porte di rete o socket:
+Il progetto `PlcBridge.Tests` è stato riallineato al contratto `IPlcService` post-refactoring ed è riattivato nella solution. La suite verifica il comportamento del `SimulatedPlcService` in isolamento, senza aprire porte di rete o socket:
 
 - **`ConnectAsync_ShouldSetStateToConnected`:** verifica che dopo la connessione lo stato passi a `ConnectionState.Connected`
 - **`DisconnectAsync_ShouldSetStateToDisconnected`:** verifica che la disconnessione riporti lo stato a `ConnectionState.Disconnected`
 - **`ReadTagAsync_WhenNotConnected_ShouldThrowException`:** verifica che una lettura tentata senza connessione attiva sollevi una `InvalidOperationException`
-- **`ReadTagAsync_Pressure_ShouldReturnDoubleValue`:** verifica che il tag `PRESSURE` restituisca un valore `double` compreso nel range simulato (10.0–15.0 Bar)
-- **`WriteAndRead_PumpStatus_ShouldUpdateValue`:** verifica che una scrittura sul tag `PUMP_STATUS` sia effettivamente persistita e rileggibile
+- **`ReadTagAsync_Pressure_ShouldReturnDoubleValue`:** verifica che la pressione restituisca un valore `double` compreso nel range simulato (10.0–15.0 Bar)
+- **`WriteAndRead_PumpStatus_ShouldUpdateValue`:** verifica che una scrittura sullo stato della pompa sia effettivamente persistita e rileggibile
 
-Grazie al disaccoppiamento introdotto da `IPlcDriver`, ogni test istanzia direttamente il `SimulatorPlcDriver` tramite l'interfaccia, rendendo la suite veloce e indipendente dallo stack di rete o dall'host.
+Grazie al disaccoppiamento introdotto da `IPlcService`, ogni test istanzia direttamente il `SimulatedPlcService` tramite l'interfaccia, rendendo la suite veloce e indipendente dallo stack di rete o dall'host.
 
 ## 🐛 Troubleshooting Log
 
@@ -160,7 +166,7 @@ Lezioni raccolte durante lo sviluppo, utili come riferimento futuro.
 - **Risoluzione:** passaggio all'architettura coesa a singolo eseguibile (Generic Host) che elimina la necessità di due processi paralleli. *(Alternativa appresa per casi simili: usare `dotnet run --no-build`)*.
 
 ### 6. Spazio dei nomi o Interfaccia non trovata (`CS0234`, `CS0246`)
-- **Problema:** il progetto Infrastructure non trovava l'interfaccia `IPlcDriver` presente in Core, nonostante il `ProjectReference` fosse configurato correttamente in MSBuild.
+- **Problema:** il progetto Infrastructure non trovava l'interfaccia del servizio del Core, nonostante il `ProjectReference` fosse configurato correttamente in MSBuild.
 - **Causa:** il file dell'interfaccia nel progetto Core era stato creato accidentalmente senza l'estensione `.cs`. Il compilatore ignora i file senza estensione, rendendo il progetto Core compilabile ma di fatto privo dell'interfaccia.
 - **Risoluzione:** aggiunta l'estensione `.cs` al file sorgente.
 
@@ -172,7 +178,7 @@ La gestione della concorrenza ha dimostrato l'importanza di prevedere gli scenar
 
 L'errore sul file bloccato (MSB3026) è stata un'ottima lezione sul funzionamento del sistema operativo Windows e sui meccanismi di build impliciti della CLI di .NET (`dotnet run` vs `dotnet build`).
 
-Il refactoring verso la Clean Architecture si sta confermando cruciale: le interfacce (`IPlcDriver`) permettono di sostituire la tecnologia sottostante senza che la logica del programma se ne accorga. Un domani, il passaggio dal `SimulatorDriver` a un driver `S7Net` per un PLC fisico richiederà solo la modifica di una riga nella Dependency Injection.
+Il refactoring del contratto da `IPlcDriver`/`PlcTag` a `IPlcService`/`PlcSystemStatus` ha rafforzato il principio cardine della Clean Architecture: le interfacce permettono di sostituire la tecnologia sottostante senza che la logica del programma se ne accorga. Un domani, il passaggio dal `SimulatedPlcService` a un driver `S7Net` per un PLC fisico richiederà solo la modifica di una riga nella Dependency Injection.
 
 ## 🛠️ Tech Stack
 
