@@ -5,4 +5,5 @@
   <Project Path="PlcBridge.Core/PlcBridge.Core.csproj" />
   <Project Path="PlcBridge.Infrastructure/PlcBridge.Infrastructure.csproj" />
   <Project Path="PlcBridge.Tests/PlcBridge.Tests.csproj" />
+  <Project Path="PlcBridge.WebHmi/PlcBridge.WebHmi.csproj" />
 </Solution>
