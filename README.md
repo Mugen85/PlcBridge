@@ -20,6 +20,7 @@ Nasce come banco di prova per la comunicazione TCP/IP e i modelli Request-Respon
 - **.NET Generic Host:** DI nativa, configurazione centralizzata, gestione del ciclo di vita
 - **Thread-Safety & Graceful Shutdown:** `lock` sui dati condivisi, `CancellationToken` per uno shutdown pulito (tasto **ESC**)
 - **Test Unitari (xUnit):** validano `IPlcService` senza aprire porte di rete o socket
+- **Integration Test TCP (xUnit):** verifica il flusso completo `TcpClient` → `TcpPlcServer` → `IPlcCommandProcessor` → `SimulatedPlcService` su loopback, usando una porta isolata (`50505`)
 - **CI/CD Ready:** pipeline GitHub Actions
 
 ## 🚀 Come iniziare
@@ -70,7 +71,7 @@ dotnet test
 - [x] **Thread-Safety & Graceful Shutdown:** `lock` + `CancellationToken`
 - [x] **Raffinamento del contratto di dominio:** da modello a tag (`IPlcDriver`/`PlcTag`) a servizio tipizzato (`IPlcService`/`PlcSystemStatus`)
 - [x] **TCP Server per client esterni:** `TcpListener` dedicato (porta 5050), testato con connessione multi-comando da client PowerShell
-- [x] **Quality Assurance:** suite xUnit riallineata a `IPlcService`
+- [x] **Quality Assurance:** suite xUnit riallineata a `IPlcService` + integration test TCP
 
 ## 🏗️ Architettura e Logica
 
@@ -116,6 +117,20 @@ Console (`[HH:mm:ss LVL] Messaggio`) + file giornaliero (`logs/plcbridge-YYYYMMD
 - `ReadTagAsync_Pressure_ShouldReturnDoubleValue` (range 10.0–15.0 Bar)
 - `WriteAndRead_PumpStatus_ShouldUpdateValue`
 
+### Integration Testing del TCP Server
+
+Oltre ai test unitari, la suite contiene `TcpServerIntegrationTests`, che verifica il comportamento del sistema attraverso il vero stack di comunicazione TCP.
+
+Il test:
+
+- avvia un'istanza reale di `TcpPlcServer` sulla porta isolata `50505`;
+- apre una connessione reale tramite `TcpClient` verso `127.0.0.1`;
+- invia il comando `START_PUMP`;
+- legge la risposta dal socket;
+- verifica che la risposta sia `OK:PUMP_STARTED`.
+
+In questo modo viene verificata l'integrazione tra **TCP Server, command processor e servizio PLC simulato**, senza dipendere da un processo server esterno.
+
 ## 🐛 Troubleshooting Log
 
 | # | Problema | Causa | Risoluzione |
@@ -141,7 +156,7 @@ Il refactoring da `IPlcDriver`/`PlcTag` a `IPlcService`/`PlcSystemStatus` ha raf
 - TCP/IP Sockets (`TcpListener` multi-client + `TcpClient`)
 - Spectre.Console (TUI)
 - Dependency Injection / Inversion of Control
-- xUnit (Unit Testing)
+- xUnit (Unit & Integration Testing)
 - GitHub Actions (CI/CD)
 
 ## 🖼️ Screenshot
