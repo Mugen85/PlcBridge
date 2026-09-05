@@ -9,7 +9,8 @@ Nasce come banco di prova per la comunicazione TCP/IP e i modelli Request-Respon
 ## ✨ Caratteristiche
 
 - **Simulatore PLC Stateful e thread-safe:** memoria interna che simula temperatura, pressione e stato pompa di un vero PLC (`IPlcService` / `PlcSystemStatus`)
-- **TCP Server per client esterni:** un `TcpListener` dedicato (porta 5050) accetta connessioni concorrenti da client esterni (HMI, script, tool di test), esponendo gli stessi comandi del sistema tramite un protocollo testuale request-response, in parallelo al polling interno
+- **TCP Server per client esterni:** un `TcpListener` dedicato accetta connessioni concorrenti da client esterni (HMI, script, tool di test), esponendo gli stessi comandi del sistema tramite un protocollo testuale request-response, in parallelo al polling interno
+- **Configurazione di rete esternalizzata:** indirizzo IP, host e porta non sono più cablati nel codice, ma centralizzati in `TcpSettings` e caricati da `appsettings.json` tramite il pattern nativo `IOptions<T>`
 - **Polling interno automatico:** `BackgroundService` (`PlcPollingWorker`) che interroga il PLC su un thread separato dalla UI
 - **Web HMI collegata via TCP/IP:** la Web HMI Blazor utilizza `NetworkPlcService` e comunica con il Worker esclusivamente tramite il protocollo TCP, senza accedere direttamente al `SimulatedPlcService`
 - **Connessione persistente multi-comando:** la connessione TCP della HMI resta aperta per l'intera sessione, permettendo più comandi consecutivi senza riconnettersi a ogni operazione
@@ -20,7 +21,7 @@ Nasce come banco di prova per la comunicazione TCP/IP e i modelli Request-Respon
 - **.NET Generic Host:** DI nativa, configurazione centralizzata, gestione del ciclo di vita
 - **Thread-Safety & Graceful Shutdown:** `lock` sui dati condivisi, `CancellationToken` per uno shutdown pulito (tasto **ESC**)
 - **Test Unitari (xUnit):** validano `IPlcService` senza aprire porte di rete o socket
-- **Integration Test TCP (xUnit):** verifica il flusso completo `TcpClient` → `TcpPlcServer` → `IPlcCommandProcessor` → `SimulatedPlcService` su loopback, usando una porta isolata (`50505`)
+- **Integration Test TCP (xUnit):** verifica il flusso completo `TcpClient` → `TcpPlcServer` → `IPlcCommandProcessor` → `SimulatedPlcService` su loopback, usando una porta isolata configurata tramite `Options.Create(new TcpSettings { ... })`
 - **CI/CD Ready:** pipeline GitHub Actions
 
 ## 🚀 Come iniziare
@@ -63,7 +64,26 @@ git clone https://github.com/Mugen85/PlcBridge.git
 cd PlcBridge
 ```
 
-### 2. Avvia il server PlcBridge
+### 2. Configura la rete (opzionale)
+
+Sia `PlcBridge.Worker` che `PlcBridge.WebHmi` includono un `appsettings.json` con la sezione `TcpSettings`:
+
+```json
+{
+  "TcpSettings": {
+    "BindAddress": "127.0.0.1",
+    "Host": "127.0.0.1",
+    "Port": 5050
+  }
+}
+```
+
+- Nel `Worker`, `BindAddress` è l'indirizzo su cui il `TcpPlcServer` resta in ascolto (`0.0.0.0` per accettare traffico da tutta la LAN).
+- Nella `WebHmi`, `Host` e `Port` indicano dove `NetworkPlcService` deve connettersi.
+
+Per cambiare ambiente (es. esporre il server sulla rete locale invece che solo in loopback) è sufficiente modificare questo file: non serve ricompilare né toccare il codice C#.
+
+### 3. Avvia il server PlcBridge
 
 Apri il **primo terminale** e avvia il Worker:
 
@@ -75,11 +95,11 @@ Il Worker avvia automaticamente:
 
 - il `SimulatedPlcService`, che mantiene lo stato della macchina;
 - il `PlcPollingWorker`, che esegue il polling interno;
-- il `TcpPlcServer`, che rimane in ascolto sulla porta `5050`.
+- il `TcpPlcServer`, che rimane in ascolto sull'indirizzo/porta letti da `TcpSettings` (default `127.0.0.1:5050`).
 
 Il terminale del Worker deve **rimanere in esecuzione** mentre utilizzi la Web HMI.
 
-### 3. Avvia la Web HMI
+### 4. Avvia la Web HMI
 
 Apri un **secondo terminale**, senza chiudere il primo, e avvia la Web HMI:
 
@@ -87,7 +107,7 @@ Apri un **secondo terminale**, senza chiudere il primo, e avvia la Web HMI:
 dotnet run --project PlcBridge.WebHmi/PlcBridge.WebHmi.csproj
 ```
 
-La Web HMI utilizza `NetworkPlcService`, che si collega al server TCP del PlcBridge su:
+La Web HMI utilizza `NetworkPlcService`, che si collega al server TCP del PlcBridge sull'host e la porta configurati in `appsettings.json` (default):
 
 ```text
 127.0.0.1:5050
@@ -105,7 +125,7 @@ STOP_PUMP
 
 Dopo l'avvio, apri nel browser l'URL HTTPS indicato dalla console della Web HMI.
 
-### 4. Ordine corretto di avvio
+### 5. Ordine corretto di avvio
 
 L'ordine di avvio è importante:
 
@@ -117,7 +137,7 @@ PlcBridge.Worker
     │
     ├── SimulatedPlcService
     ├── PlcPollingWorker
-    └── TcpPlcServer :5050
+    └── TcpPlcServer (IOptions<TcpSettings>)
              │
              │ TCP/IP
              ▼
@@ -127,7 +147,7 @@ Terminale 2
 PlcBridge.WebHmi
     │
     ▼
-NetworkPlcService
+NetworkPlcService (IOptions<TcpSettings>)
     │
     ▼
 TCP → PlcBridge
@@ -137,7 +157,7 @@ TCP → PlcBridge
 
 Se la Web HMI viene avviata prima del Worker, il server TCP non sarà disponibile. `NetworkPlcService` tenterà di stabilire la connessione quando verrà eseguita un'operazione sul servizio; in assenza del server verrà generato un errore di connessione.
 
-### 5. Arresto del sistema
+### 6. Arresto del sistema
 
 Per arrestare il Worker in modo pulito, utilizzare il normale meccanismo di shutdown dell'host e premere **ESC** quando previsto dalla TUI.
 
@@ -182,9 +202,10 @@ dotnet test PlcBridge.Tests/PlcBridge.Tests.csproj
 - [x] **.NET Generic Host:** `BackgroundService` per il polling asincrono
 - [x] **Thread-Safety & Graceful Shutdown:** `lock` + `CancellationToken`
 - [x] **Raffinamento del contratto di dominio:** da modello a tag (`IPlcDriver`/`PlcTag`) a servizio tipizzato (`IPlcService`/`PlcSystemStatus`)
-- [x] **TCP Server per client esterni:** `TcpListener` dedicato (porta 5050), testato con connessione multi-comando da client PowerShell
+- [x] **TCP Server per client esterni:** `TcpListener` dedicato, testato con connessione multi-comando da client PowerShell
 - [x] **Network Web HMI:** `NetworkPlcService` collega la Web HMI al PlcBridge tramite TCP/IP
-- [x] **Quality Assurance:** suite xUnit riallineata a `IPlcService` + integration test TCP
+- [x] **Configurazione esternalizzata:** `TcpSettings` + `appsettings.json` + `IOptions<T>`, nessun valore di rete cablato nel codice sorgente
+- [x] **Quality Assurance:** suite xUnit riallineata a `IPlcService` + integration test TCP con `Options.Create`
 
 ## 🏗️ Architettura e Logica
 
@@ -192,11 +213,11 @@ dotnet test PlcBridge.Tests/PlcBridge.Tests.csproj
 
 | Componente | Descrizione |
 |---|---|
-| **PlcBridge.Core** | Contratti (`IPlcService`) e modelli immutabili (`PlcSystemStatus`). Nessuna dipendenza esterna. |
-| **PlcBridge.Infrastructure** | `SimulatedPlcService`, `PlcCommandProcessor` e `TcpPlcServer`: implementazioni infrastrutturali dei contratti e del protocollo TCP. |
-| **PlcBridge.Worker** | Host `.NET Generic Host`: DI, Serilog, `PlcPollingWorker` e servizi necessari al bridge; ospita il processo backend/PLC simulato. |
-| **PlcBridge.WebHmi** | Applicazione Blazor Server. `NetworkPlcService` implementa `IPlcService` e inoltra le operazioni al Worker tramite TCP/IP. |
-| **PlcBridge.Tests** | Suite xUnit che valida `IPlcService` in isolamento e l'integrazione del TCP Server. |
+| **PlcBridge.Core** | Contratti (`IPlcService`), modelli immutabili (`PlcSystemStatus`) e la classe di configurazione `TcpSettings` (namespace `PlcBridge.Core.Models`). Nessuna dipendenza esterna. |
+| **PlcBridge.Infrastructure** | `SimulatedPlcService`, `PlcCommandProcessor` e `TcpPlcServer`: implementazioni infrastrutturali dei contratti e del protocollo TCP. `TcpPlcServer` riceve `IOptions<TcpSettings>` invece di un valore di porta cablato. |
+| **PlcBridge.Worker** | Host `.NET Generic Host`: DI, Serilog, `PlcPollingWorker` e servizi necessari al bridge; ospita il processo backend/PLC simulato. Registra `TcpSettings` da `appsettings.json` con `services.Configure<TcpSettings>(...)`. |
+| **PlcBridge.WebHmi** | Applicazione Blazor Server. `NetworkPlcService` implementa `IPlcService`, legge `Host`/`Port` da `IOptions<TcpSettings>` e inoltra le operazioni al Worker tramite TCP/IP. |
+| **PlcBridge.Tests** | Suite xUnit che valida `IPlcService` in isolamento e l'integrazione del TCP Server, mockando `TcpSettings` con `Options.Create(...)`. |
 
 Il codice è diviso in layer con responsabilità separate. La Web HMI non accede direttamente all'implementazione del PLC simulato: il confine tra HMI e backend è il protocollo TCP/IP esposto dal PlcBridge.
 
@@ -206,7 +227,7 @@ Il sistema separa chiaramente il processo backend dal processo HMI:
 
 - `PlcBridge.Worker` ospita il `SimulatedPlcService`, il `PlcPollingWorker` e il `TcpPlcServer`;
 - `PlcBridge.WebHmi` ospita la UI Blazor e `NetworkPlcService`;
-- `NetworkPlcService` mantiene una connessione TCP persistente verso `127.0.0.1:5050`;
+- `NetworkPlcService` mantiene una connessione TCP persistente verso l'host/porta configurati in `TcpSettings`;
 - le richieste provenienti dalla HMI vengono inoltrate al Worker tramite il protocollo request-response TCP;
 - il Worker traduce i comandi ricevuti attraverso `PlcCommandProcessor` e li delega al servizio PLC simulato.
 
@@ -217,11 +238,11 @@ WebHmi
    │
    │ IPlcService
    ▼
-NetworkPlcService
+NetworkPlcService (IOptions<TcpSettings>)
    │
    │ TCP/IP
    ▼
-TcpPlcServer
+TcpPlcServer (IOptions<TcpSettings>)
    │
    ▼
 PlcCommandProcessor
@@ -235,13 +256,27 @@ PlcSystemStatus
 
 Questa separazione rende il comportamento più realistico rispetto a una HMI che accede direttamente al servizio PLC in memoria. Il server diventa infatti un vero endpoint di rete e, in futuro, il `SimulatedPlcService` può essere sostituito da un driver PLC reale senza dover modificare la HMI.
 
+### Configurazione di rete centralizzata (`TcpSettings`)
+
+Prima di questo refactoring, indirizzo e porta TCP erano valori cablati nel codice sorgente (nel costruttore di `TcpPlcServer` e in `NetworkPlcService`). Questo rendeva impossibile cambiare ambiente senza ricompilare, ed era un limite rispetto a uno standard enterprise.
+
+La soluzione adottata sfrutta l'infrastruttura di configurazione nativa di .NET:
+
+- **`TcpSettings.cs`** (`PlcBridge.Core.Models`): una POCO con `BindAddress`, `Host` e `Port`, che rappresenta il contratto di configurazione condiviso da server e client.
+- **`appsettings.json`**: presente sia in `PlcBridge.Worker` che in `PlcBridge.WebHmi`, con i rispettivi `.csproj` configurati per copiare il file nell'output (`PreserveNewest`) ad ogni build.
+- **`IOptions<TcpSettings>`**: nei rispettivi `Program.cs`, `services.Configure<TcpSettings>(configuration.GetSection("TcpSettings"))` collega la sezione JSON al binding automatico dell'oggetto.
+- **`TcpPlcServer`**: non riceve più un `int port` nel costruttore, ma `IOptions<TcpSettings>`, da cui estrae `BindAddress` e `Port` per il binding del `TcpListener`.
+- **`NetworkPlcService`**: allo stesso modo, legge `Host` e `Port` da `IOptions<TcpSettings>` invece di valori fissi nel codice.
+
+Il risultato è che cambiare ambiente (es. da sviluppo locale a un'installazione in LAN) richiede solo la modifica di `appsettings.json`, senza toccare una riga di C#.
+
 ### Connessione TCP dalla Web HMI
 
 `NetworkPlcService` implementa `IPlcService` mantenendo il contratto del Core indipendente dal protocollo di trasporto.
 
 La classe:
 
-- apre la connessione verso `127.0.0.1:5050` quando necessario;
+- apre la connessione verso l'host/porta letti da `IOptions<TcpSettings>` quando necessario;
 - riutilizza la connessione per più comandi consecutivi;
 - usa `SemaphoreSlim` per serializzare le richieste sul socket condiviso;
 - resetta il canale in caso di errore di comunicazione, consentendo una successiva riconnessione;
@@ -278,15 +313,17 @@ Console (`[HH:mm:ss LVL] Messaggio`) + file giornaliero (`logs/plcbridge-YYYYMMD
 
 Oltre ai test unitari, la suite contiene `TcpServerIntegrationTests`, che verifica il comportamento del sistema attraverso il vero stack di comunicazione TCP.
 
+Dato che `TcpPlcServer` non accetta più un intero a mano per la porta, il test costruisce le impostazioni al volo con `Options.Create(new TcpSettings { BindAddress = "127.0.0.1", Port = 50505 })`, mantenendo l'isolamento dalla configurazione reale.
+
 Il test:
 
-- avvia un'istanza reale di `TcpPlcServer` sulla porta isolata `50505`;
+- avvia un'istanza reale di `TcpPlcServer` su una porta isolata (`50505`), configurata tramite `Options.Create`;
 - apre una connessione reale tramite `TcpClient` verso `127.0.0.1`;
 - invia il comando `START_PUMP`;
 - legge la risposta dal socket;
 - verifica che la risposta sia `OK:PUMP_STARTED`.
 
-In questo modo viene verificata l'integrazione tra **TCP Server, command processor e servizio PLC simulato**, senza dipendere da un processo server esterno.
+In questo modo viene verificata l'integrazione tra **TCP Server, command processor e servizio PLC simulato**, senza dipendere da un processo server esterno né da valori di configurazione cablati.
 
 ## 🐛 Troubleshooting Log
 
@@ -299,6 +336,7 @@ In questo modo viene verificata l'integrazione tra **TCP Server, command process
 | 5 | `MSB3026`/`MSB3027`, file `.exe` bloccato | Due processi (`server`/`client`) bloccavano l'eseguibile su Windows | Architettura a processi separati per Worker e Web HMI |
 | 6 | `CS0234`/`CS0246`, interfaccia non trovata nonostante `ProjectReference` corretto | File dell'interfaccia in Core creato senza estensione `.cs` | Aggiunta l'estensione mancante |
 | 7 | Web HMI non raggiunge il PLC simulato direttamente | La HMI è stata separata dal processo Worker | Aggiunto `NetworkPlcService` per la comunicazione TCP/IP con il Worker |
+| 8 | Test di integrazione TCP non più compilabili dopo il refactoring della configurazione | Il costruttore di `TcpPlcServer` non accetta più un `int port` ma `IOptions<TcpSettings>` | Aggiornati i test con `Options.Create(new TcpSettings { ... })` per mockare la configurazione su porta isolata |
 
 ## 💭 Riflessioni Tecniche
 
@@ -306,14 +344,16 @@ Il passaggio da script procedurali a .NET Generic Host ha mostrato la differenza
 
 L'introduzione di `NetworkPlcService` ha aggiunto un vero confine di rete tra Web HMI e backend. La HMI non accede più direttamente al simulatore: comunica attraverso il protocollo TCP/IP, mantenendo `IPlcService` come contratto astratto del Core.
 
+L'eliminazione dei valori di rete cablati tramite `TcpSettings` e `IOptions<T>` ha chiuso un altro debito tecnico tipico dei progetti "da laboratorio": un indirizzo o una porta scritti direttamente nel codice sono innocui in una demo locale, ma diventano un problema reale nel momento in cui l'applicazione deve girare su ambienti diversi (sviluppo, collaudo, produzione) senza essere ricompilata. Il pattern `IOptions<T>` è lo standard con cui .NET risolve questo problema, ed è lo stesso approccio usato in applicazioni enterprise di produzione.
+
 Il sistema rappresenta ora un flusso più realistico:
 
 ```text
 HMI
  ↓
-Network TCP Client
+Network TCP Client (IOptions<TcpSettings>)
  ↓
-PlcBridge TCP Server
+PlcBridge TCP Server (IOptions<TcpSettings>)
  ↓
 Command Processor
  ↓
@@ -331,6 +371,7 @@ Il refactoring da `IPlcDriver`/`PlcTag` a `IPlcService`/`PlcSystemStatus` ha raf
 - C# / .NET 10
 - Clean Architecture (Core, Infrastructure, Worker, WebHmi)
 - .NET Generic Host & `BackgroundService`
+- Configurazione esterna (`appsettings.json`, `IOptions<T>`)
 - TCP/IP Sockets (`TcpListener` multi-client + `TcpClient`)
 - Blazor Server / Razor Components
 - Spectre.Console (TUI)
