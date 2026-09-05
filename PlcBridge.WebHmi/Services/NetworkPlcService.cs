@@ -5,33 +5,29 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PlcBridge.Core.Interfaces;
 using PlcBridge.Core.Models;
 
 namespace PlcBridge.WebHmi.Services;
 
-/// <summary>
-/// Implementazione di IPlcService per la Web HMI che inoltra le chiamate 
-/// al PlcBridge.Worker remoto/locale tramite protocollo TCP/IP.
-/// </summary>
 public class NetworkPlcService : IPlcService, IAsyncDisposable
 {
-    const string Host = "127.0.0.1";
-    const int Port = 5050;
+    private readonly TcpSettings _settings;
+    private readonly ILogger<NetworkPlcService> _logger;
+    private TcpClient? _client;
+    private NetworkStream? _stream;
+    private StreamReader? _reader;
+    private StreamWriter? _writer;
+    private readonly SemaphoreSlim _lock = new(1, 1);
 
-    readonly ILogger<NetworkPlcService> _logger;
-    TcpClient? _client;
-    NetworkStream? _stream;
-    StreamReader? _reader;
-    StreamWriter? _writer;
-    readonly SemaphoreSlim _lock = new(1, 1);
-
-    public NetworkPlcService(ILogger<NetworkPlcService> logger)
+    public NetworkPlcService(IOptions<TcpSettings> settings, ILogger<NetworkPlcService> logger)
     {
-        _logger = logger;
+        _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    async Task EnsureConnectedAsync(CancellationToken cancellationToken)
+    private async Task EnsureConnectedAsync(CancellationToken cancellationToken)
     {
         if (_client is { Connected: true } && _stream != null && _reader != null && _writer != null)
             return;
@@ -39,18 +35,17 @@ public class NetworkPlcService : IPlcService, IAsyncDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            // Doppio controllo in thread safety
             if (_client is { Connected: true }) return;
 
-            _logger.LogInformation("Tentativo di connessione TCP al bridge {Host}:{Port}...", Host, Port);
-
+            _logger.LogInformation("Tentativo di connessione TCP al bridge {Host}:{Port}...", _settings.Host, _settings.Port);
+            
             _client = new TcpClient();
-            await _client.ConnectAsync(Host, Port, cancellationToken);
-
+            await _client.ConnectAsync(_settings.Host, _settings.Port, cancellationToken);
+            
             _stream = _client.GetStream();
             _reader = new StreamReader(_stream, Encoding.UTF8);
             _writer = new StreamWriter(_stream, Encoding.UTF8) { AutoFlush = true };
-
+            
             _logger.LogInformation("Connessione TCP al bridge stabilita con successo.");
         }
         catch (Exception ex)
@@ -64,7 +59,7 @@ public class NetworkPlcService : IPlcService, IAsyncDisposable
         }
     }
 
-    async Task<string> SendAndReceiveAsync(string command, CancellationToken cancellationToken)
+    private async Task<string> SendAndReceiveAsync(string command, CancellationToken cancellationToken)
     {
         await EnsureConnectedAsync(cancellationToken);
 
@@ -74,12 +69,10 @@ public class NetworkPlcService : IPlcService, IAsyncDisposable
             if (_writer is null || _reader is null)
                 throw new InvalidOperationException("Canale di comunicazione TCP non inizializzato.");
 
-            // Invio comando al server
             await _writer.WriteLineAsync(command.AsMemory(), cancellationToken);
 
-            // Lettura risposta dal server
             string? response = await _reader.ReadLineAsync(cancellationToken);
-
+            
             if (response is null)
                 throw new IOException("Il server TCP ha chiuso la connessione inaspettatamente.");
 
@@ -87,7 +80,6 @@ public class NetworkPlcService : IPlcService, IAsyncDisposable
         }
         catch (Exception)
         {
-            // Se c'è un errore di comunicazione, resettiamo il client per forzare la riconnessione al giro successivo
             await ResetConnectionAsync();
             throw;
         }
@@ -97,7 +89,7 @@ public class NetworkPlcService : IPlcService, IAsyncDisposable
         }
     }
 
-    Task ResetConnectionAsync()
+    private Task ResetConnectionAsync()
     {
         try
         {
@@ -106,8 +98,8 @@ public class NetworkPlcService : IPlcService, IAsyncDisposable
             _stream?.Dispose();
             _client?.Dispose();
         }
-        catch { /* Ignora errori di pulizia socket */ }
-
+        catch { /* Ignora eccezioni di cleanup socket */ }
+        
         _client = null;
         _stream = null;
         _reader = null;
@@ -117,13 +109,12 @@ public class NetworkPlcService : IPlcService, IAsyncDisposable
 
     public async Task<PlcSystemStatus> GetSystemStatusAsync(CancellationToken cancellationToken = default)
     {
-        // Protocollo: GET_STATUS -> Risposta attesa: OK:TEMP=24.5;PRESS=12.1;PUMP=1
         string rawResponse = await SendAndReceiveAsync("GET_STATUS", cancellationToken);
-
+        
         if (!rawResponse.StartsWith("OK:"))
             throw new InvalidOperationException($"Risposta non valida dal PLC: {rawResponse}");
 
-        string payload = rawResponse.Substring(3); // Rimuove "OK:"
+        string payload = rawResponse.Substring(3);
         double temp = 0;
         double press = 0;
         bool pump = false;
@@ -146,14 +137,14 @@ public class NetworkPlcService : IPlcService, IAsyncDisposable
         string rawResponse = await SendAndReceiveAsync("READ_TEMP", cancellationToken);
         if (rawResponse.StartsWith("OK:") && double.TryParse(rawResponse.Substring(3), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double val))
             return val;
-
+        
         throw new InvalidOperationException($"Errore lettura temperatura: {rawResponse}");
     }
 
     public async Task<double> ReadPressureAsync(CancellationToken cancellationToken = default)
     {
         string rawResponse = await SendAndReceiveAsync("READ_PRESSURE", cancellationToken);
-
+        
         if (rawResponse.StartsWith("OK:") && double.TryParse(rawResponse.Substring(3), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double pressureVal))
         {
             return pressureVal;

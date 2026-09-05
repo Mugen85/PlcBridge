@@ -20,6 +20,9 @@
   <!-- Riferimenti ai nostri progetti interni -->
   <ProjectReference Include="..\PlcBridge.Core\PlcBridge.Core.csproj"/>
   <ProjectReference Include="..\PlcBridge.Infrastructure\PlcBridge.Infrastructure.csproj"/>
+  <None Update="appsettings.json">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
 </ItemGroup>
 
 </Project>

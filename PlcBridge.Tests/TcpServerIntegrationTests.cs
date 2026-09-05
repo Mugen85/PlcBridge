@@ -5,7 +5,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options; // <-- Assicurati di avere questo using
 using PlcBridge.Core.Interfaces;
+using PlcBridge.Core.Models;
 using PlcBridge.Infrastructure.Services;
 using Xunit;
 
@@ -24,8 +26,15 @@ public class TcpServerIntegrationTests : IAsyncDisposable
         _plcService = new SimulatedPlcService(NullLogger<SimulatedPlcService>.Instance);
         _processor = new PlcCommandProcessor(_plcService, NullLogger<PlcCommandProcessor>.Instance);
         
+        // Creiamo le opzioni mockate per il test usando IOptions
+        var options = Options.Create(new TcpSettings 
+        { 
+            BindAddress = "127.0.0.1", 
+            Port = _testPort 
+        });
+
         _cts = new CancellationTokenSource();
-        _server = new TcpPlcServer(_processor, NullLogger<TcpPlcServer>.Instance, _testPort);
+        _server = new TcpPlcServer(_processor, NullLogger<TcpPlcServer>.Instance, options);
 
         // Avvia il server TCP in background in modo non bloccante
         _ = _server.StartAsync(_cts.Token);
