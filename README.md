@@ -9,14 +9,14 @@ Nasce come banco di prova per la comunicazione TCP/IP e i modelli Request-Respon
 ## ✨ Caratteristiche
 
 - **Simulatore PLC Stateful e thread-safe:** memoria interna che simula temperatura, pressione e stato pompa di un vero PLC (`IPlcService` / `PlcSystemStatus`)
-- **TCP Server per client esterni:** un `TcpListener` dedicato (porta 5050) accetta connessioni concorrenti da client esterni (script, tool di test, future HMI), esponendo gli stessi comandi del sistema tramite un protocollo testuale request-response, in parallelo al polling interno
+- **TCP Server per client esterni:** un `TcpListener` dedicato (porta 5050) accetta connessioni concorrenti da client esterni (HMI, script, tool di test), esponendo gli stessi comandi del sistema tramite un protocollo testuale request-response, in parallelo al polling interno
 - **Polling interno automatico:** `BackgroundService` (`PlcPollingWorker`) che interroga il PLC su un thread separato dalla UI
-- **Connessione persistente multi-comando:** sia lato polling interno che lato client TCP, la connessione resta aperta per l'intera sessione, permettendo più comandi consecutivi senza riconnettersi
+- **Web HMI collegata via TCP/IP:** la Web HMI Blazor utilizza `NetworkPlcService` e comunica con il Worker esclusivamente tramite il protocollo TCP, senza accedere direttamente al `SimulatedPlcService`
+- **Connessione persistente multi-comando:** la connessione TCP della HMI resta aperta per l'intera sessione, permettendo più comandi consecutivi senza riconnettersi a ogni operazione
 - **Comandi di lettura:** `READ_PRESSURE` / `GET_STATUS`, `READ_TEMP`
 - **Comandi di controllo attuatori:** `START_PUMP`, `STOP_PUMP`
-- **Client di Monitoraggio (TUI):** interfaccia con Spectre.Console per visualizzare lo stato macchina
 - **Logging strutturato con Serilog:** console + file con rotazione giornaliera (retention 3 file)
-- **Clean Architecture:** layer Core / Infrastructure / Worker / Tests totalmente disaccoppiati
+- **Clean Architecture:** layer Core / Infrastructure / Worker / WebHmi / Tests disaccoppiati
 - **.NET Generic Host:** DI nativa, configurazione centralizzata, gestione del ciclo di vita
 - **Thread-Safety & Graceful Shutdown:** `lock` sui dati condivisi, `CancellationToken` per uno shutdown pulito (tasto **ESC**)
 - **Test Unitari (xUnit):** validano `IPlcService` senza aprire porte di rete o socket
@@ -25,24 +25,128 @@ Nasce come banco di prova per la comunicazione TCP/IP e i modelli Request-Respon
 
 ## 🚀 Come iniziare
 
-> **Nota sull'evoluzione:** nelle versioni precedenti il progetto richiedeva l'avvio separato di un comando server e un comando client su due terminali distinti. Con Clean Architecture e .NET Generic Host, l'applicazione è oggi un unico eseguibile coeso, che espone anche un endpoint TCP per client esterni.
+Il sistema è composto da due processi distinti che simulano un'architettura più vicina a uno scenario reale **HMI → Bridge → PLC**:
 
-1. Clona la repository:
-   ```
-   git clone https://github.com/Mugen85/PlcBridge.git
-   ```
-2. Spostati nella cartella del Worker:
-   ```
-   cd PlcBridge.Worker
-   ```
-3. Avvia il sistema:
-   ```
-   dotnet run --project PlcBridge.Worker/PlcBridge.csproj
-   ```
+```text
+┌─────────────────────────────┐
+│           Web HMI           │
+│       Blazor Server         │
+│     NetworkPlcService       │
+└──────────────┬──────────────┘
+               │
+               │ TCP/IP
+               │ 127.0.0.1:5050
+               ▼
+┌─────────────────────────────┐
+│       PlcBridge.Worker      │
+│        TcpPlcServer         │
+│       PlcPollingWorker      │
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│      SimulatedPlcService    │
+│        Stato macchina       │
+└─────────────────────────────┘
+```
 
-L'applicazione avvia in automatico il polling interno e il TCP Server sulla porta 5050, mostrando i log a schermo. Per terminare in modo pulito (Graceful Shutdown), premere **ESC**.
+### Prerequisiti
 
-Per testare il TCP Server da un client esterno (es. PowerShell):
+- .NET 10 SDK
+- Git
+- Un browser moderno per la Web HMI
+
+### 1. Clona la repository
+
+```bash
+git clone https://github.com/Mugen85/PlcBridge.git
+cd PlcBridge
+```
+
+### 2. Avvia il server PlcBridge
+
+Apri il **primo terminale** e avvia il Worker:
+
+```bash
+dotnet run --project PlcBridge.Worker/PlcBridge.csproj
+```
+
+Il Worker avvia automaticamente:
+
+- il `SimulatedPlcService`, che mantiene lo stato della macchina;
+- il `PlcPollingWorker`, che esegue il polling interno;
+- il `TcpPlcServer`, che rimane in ascolto sulla porta `5050`.
+
+Il terminale del Worker deve **rimanere in esecuzione** mentre utilizzi la Web HMI.
+
+### 3. Avvia la Web HMI
+
+Apri un **secondo terminale**, senza chiudere il primo, e avvia la Web HMI:
+
+```bash
+dotnet run --project PlcBridge.WebHmi/PlcBridge.WebHmi.csproj
+```
+
+La Web HMI utilizza `NetworkPlcService`, che si collega al server TCP del PlcBridge su:
+
+```text
+127.0.0.1:5050
+```
+
+Le operazioni della HMI vengono quindi inoltrate al Worker attraverso il bridge TCP:
+
+```text
+GET_STATUS
+READ_TEMP
+READ_PRESSURE
+START_PUMP
+STOP_PUMP
+```
+
+Dopo l'avvio, apri nel browser l'URL HTTPS indicato dalla console della Web HMI.
+
+### 4. Ordine corretto di avvio
+
+L'ordine di avvio è importante:
+
+```text
+Terminale 1
+    │
+    ▼
+PlcBridge.Worker
+    │
+    ├── SimulatedPlcService
+    ├── PlcPollingWorker
+    └── TcpPlcServer :5050
+             │
+             │ TCP/IP
+             ▼
+Terminale 2
+    │
+    ▼
+PlcBridge.WebHmi
+    │
+    ▼
+NetworkPlcService
+    │
+    ▼
+TCP → PlcBridge
+```
+
+**Avvia sempre prima `PlcBridge.Worker` e successivamente `PlcBridge.WebHmi`.**
+
+Se la Web HMI viene avviata prima del Worker, il server TCP non sarà disponibile. `NetworkPlcService` tenterà di stabilire la connessione quando verrà eseguita un'operazione sul servizio; in assenza del server verrà generato un errore di connessione.
+
+### 5. Arresto del sistema
+
+Per arrestare il Worker in modo pulito, utilizzare il normale meccanismo di shutdown dell'host e premere **ESC** quando previsto dalla TUI.
+
+La Web HMI può essere terminata separatamente chiudendo il relativo processo/terminale.
+
+### Test del TCP Server da un client esterno
+
+È possibile verificare il bridge anche senza la Web HMI, ad esempio da PowerShell:
+
 ```powershell
 $client = New-Object System.Net.Sockets.TcpClient("127.0.0.1", 5050)
 $stream = $client.GetStream()
@@ -54,10 +158,18 @@ $writer.WriteLine("GET_STATUS")
 $reader.ReadLine()
 ```
 
-Per eseguire la suite di test unitari:
+### Esecuzione dei test
+
+Dalla root della repository:
+
+```bash
+dotnet test PlcBridge.slnx
 ```
-cd PlcBridge.Tests
-dotnet test
+
+Oppure direttamente dal progetto di test:
+
+```bash
+dotnet test PlcBridge.Tests/PlcBridge.Tests.csproj
 ```
 
 ## ✅ Stato del Progetto
@@ -71,6 +183,7 @@ dotnet test
 - [x] **Thread-Safety & Graceful Shutdown:** `lock` + `CancellationToken`
 - [x] **Raffinamento del contratto di dominio:** da modello a tag (`IPlcDriver`/`PlcTag`) a servizio tipizzato (`IPlcService`/`PlcSystemStatus`)
 - [x] **TCP Server per client esterni:** `TcpListener` dedicato (porta 5050), testato con connessione multi-comando da client PowerShell
+- [x] **Network Web HMI:** `NetworkPlcService` collega la Web HMI al PlcBridge tramite TCP/IP
 - [x] **Quality Assurance:** suite xUnit riallineata a `IPlcService` + integration test TCP
 
 ## 🏗️ Architettura e Logica
@@ -80,20 +193,62 @@ dotnet test
 | Componente | Descrizione |
 |---|---|
 | **PlcBridge.Core** | Contratti (`IPlcService`) e modelli immutabili (`PlcSystemStatus`). Nessuna dipendenza esterna. |
-| **PlcBridge.Infrastructure** | `SimulatedPlcService`: implementazione thread-safe dei contratti del Core (in futuro driver Modbus/S7). |
-| **PlcBridge.Worker** | Host `.NET Generic Host`: DI, Serilog, `PlcPollingWorker` (polling interno) e `TcpServerService` (listener esterno); espone la TUI con Spectre.Console. |
-| **PlcBridge.Tests** | Suite xUnit che valida `IPlcService` in isolamento. |
+| **PlcBridge.Infrastructure** | `SimulatedPlcService`, `PlcCommandProcessor` e `TcpPlcServer`: implementazioni infrastrutturali dei contratti e del protocollo TCP. |
+| **PlcBridge.Worker** | Host `.NET Generic Host`: DI, Serilog, `PlcPollingWorker` e servizi necessari al bridge; ospita il processo backend/PLC simulato. |
+| **PlcBridge.WebHmi** | Applicazione Blazor Server. `NetworkPlcService` implementa `IPlcService` e inoltra le operazioni al Worker tramite TCP/IP. |
+| **PlcBridge.Tests** | Suite xUnit che valida `IPlcService` in isolamento e l'integrazione del TCP Server. |
 
-Il codice è diviso in layer con responsabilità rigorosamente separate, in preparazione a un'eventuale integrazione futura con una UI web (Blazor) o driver hardware reali.
+Il codice è diviso in layer con responsabilità separate. La Web HMI non accede direttamente all'implementazione del PLC simulato: il confine tra HMI e backend è il protocollo TCP/IP esposto dal PlcBridge.
 
-### Due canali di accesso: polling interno e TCP Server esterno
+### Due processi e un vero flusso HMI → Bridge → PLC
 
-Il Worker ospita ora **due `BackgroundService` paralleli** che condividono la stessa istanza di `IPlcService`:
+Il sistema separa chiaramente il processo backend dal processo HMI:
 
-- `PlcPollingWorker` — interroga il PLC internamente a ciclo continuo, per il monitoraggio automatico mostrato in TUI;
-- `TcpServerService` — un `TcpListener` in ascolto sulla porta 5050, che accetta connessioni multiple e concorrenti da client esterni, instrada i comandi testuali ricevuti (`GET_STATUS`, `START_PUMP`, `STOP_PUMP`) verso `IPlcService` e restituisce la risposta sulla stessa connessione, mantenuta aperta per l'intera sessione.
+- `PlcBridge.Worker` ospita il `SimulatedPlcService`, il `PlcPollingWorker` e il `TcpPlcServer`;
+- `PlcBridge.WebHmi` ospita la UI Blazor e `NetworkPlcService`;
+- `NetworkPlcService` mantiene una connessione TCP persistente verso `127.0.0.1:5050`;
+- le richieste provenienti dalla HMI vengono inoltrate al Worker tramite il protocollo request-response TCP;
+- il Worker traduce i comandi ricevuti attraverso `PlcCommandProcessor` e li delega al servizio PLC simulato.
 
-Questo rende PlcBridge un vero endpoint di rete interrogabile da strumenti esterni (script di test, futuri sistemi HMI/SCADA), oltre che un simulatore auto-contenuto — mentre la thread-safety di `SimulatedPlcService` (tramite `lock`) garantisce che polling interno e client esterni non entrino mai in collisione sullo stesso stato.
+Il flusso applicativo è quindi:
+
+```text
+WebHmi
+   │
+   │ IPlcService
+   ▼
+NetworkPlcService
+   │
+   │ TCP/IP
+   ▼
+TcpPlcServer
+   │
+   ▼
+PlcCommandProcessor
+   │
+   ▼
+SimulatedPlcService
+   │
+   ▼
+PlcSystemStatus
+```
+
+Questa separazione rende il comportamento più realistico rispetto a una HMI che accede direttamente al servizio PLC in memoria. Il server diventa infatti un vero endpoint di rete e, in futuro, il `SimulatedPlcService` può essere sostituito da un driver PLC reale senza dover modificare la HMI.
+
+### Connessione TCP dalla Web HMI
+
+`NetworkPlcService` implementa `IPlcService` mantenendo il contratto del Core indipendente dal protocollo di trasporto.
+
+La classe:
+
+- apre la connessione verso `127.0.0.1:5050` quando necessario;
+- riutilizza la connessione per più comandi consecutivi;
+- usa `SemaphoreSlim` per serializzare le richieste sul socket condiviso;
+- resetta il canale in caso di errore di comunicazione, consentendo una successiva riconnessione;
+- interpreta le risposte testuali del server e le converte in `PlcSystemStatus` o valori tipizzati;
+- propaga il `CancellationToken` alle operazioni asincrone di rete.
+
+Questo mantiene la Web HMI indipendente dall'implementazione concreta del PLC.
 
 ### Dal modello a tag al servizio di dominio
 
@@ -101,7 +256,9 @@ La prima versione del Core esponeva un contratto generico a tag (`IPlcDriver`, `
 
 ### Ciclo di vita e `CancellationToken`
 
-Tutte le operazioni asincrone (polling, TCP Server) sono governate da un `CancellationToken` unico, propagato a tutti i layer alla chiusura (tasto ESC). Questo evita "task zombie" e chiude in modo pulito sia le connessioni interne sia il `TcpListener`, liberando la porta senza richiedere un `taskkill`.
+Il Worker utilizza `CancellationToken` per governare polling e server TCP durante la chiusura dell'applicazione.
+
+La Web HMI utilizza `CancellationToken` anche per le operazioni di rete attraverso `NetworkPlcService`, consentendo l'annullamento delle chiamate asincrone.
 
 ### Logging con Serilog
 
@@ -139,24 +296,47 @@ In questo modo viene verificata l'integrazione tra **TCP Server, command process
 | 2 | Progetto di test annidato nel progetto principale → altri `CS0579` | Struttura cartelle errata | Creata una `.sln` in root, `dotnet sln add`, test escluso dal progetto principale |
 | 3 | `IOException` / `SocketException 10053` al secondo comando | `using` chiudeva il socket a ogni iterazione | Loop interno `while (client.Connected)` lato server |
 | 4 | Crash Spectre.Console: `malformed markup tag` | Spazi nei tag passati a `AnsiConsole.MarkupLine` | Rimosso lo spazio o usato `Markup.Escape()` |
-| 5 | `MSB3026`/`MSB3027`, file `.exe` bloccato | Due processi (`server`/`client`) bloccavano l'eseguibile su Windows | Architettura a eseguibile unico (Generic Host); alternativa: `dotnet run --no-build` |
+| 5 | `MSB3026`/`MSB3027`, file `.exe` bloccato | Due processi (`server`/`client`) bloccavano l'eseguibile su Windows | Architettura a processi separati per Worker e Web HMI |
 | 6 | `CS0234`/`CS0246`, interfaccia non trovata nonostante `ProjectReference` corretto | File dell'interfaccia in Core creato senza estensione `.cs` | Aggiunta l'estensione mancante |
+| 7 | Web HMI non raggiunge il PLC simulato direttamente | La HMI è stata separata dal processo Worker | Aggiunto `NetworkPlcService` per la comunicazione TCP/IP con il Worker |
 
 ## 💭 Riflessioni Tecniche
 
-Il passaggio da script procedurali a .NET Generic Host ha mostrato la differenza tra codice che "funziona sul momento" e codice Industrial-Grade: la gestione della concorrenza (`lock`, `CancellationToken`) è ciò che garantisce affidabilità continua quando UI, polling interno e client TCP accedono allo stesso stato.
+Il passaggio da script procedurali a .NET Generic Host ha mostrato la differenza tra codice che "funziona sul momento" e codice più robusto: la gestione della concorrenza (`lock`, `SemaphoreSlim`) e la cancellazione (`CancellationToken`) sono fondamentali quando più componenti accedono allo stesso stato attraverso canali distinti.
 
-Il refactoring da `IPlcDriver`/`PlcTag` a `IPlcService`/`PlcSystemStatus` ha rafforzato il principio cardine della Clean Architecture: le interfacce permettono di sostituire la tecnologia sottostante (oggi un simulatore, domani un driver `S7Net`) senza toccare la logica applicativa — e lo stesso principio ha permesso di aggiungere il TCP Server esterno senza modificare il polling interno o il dominio.
+L'introduzione di `NetworkPlcService` ha aggiunto un vero confine di rete tra Web HMI e backend. La HMI non accede più direttamente al simulatore: comunica attraverso il protocollo TCP/IP, mantenendo `IPlcService` come contratto astratto del Core.
+
+Il sistema rappresenta ora un flusso più realistico:
+
+```text
+HMI
+ ↓
+Network TCP Client
+ ↓
+PlcBridge TCP Server
+ ↓
+Command Processor
+ ↓
+PLC Service
+ ↓
+PLC / Simulatore
+```
+
+Questo permette di sostituire in futuro il `SimulatedPlcService` con un driver PLC reale senza coinvolgere la Web HMI e senza modificare il contratto di dominio.
+
+Il refactoring da `IPlcDriver`/`PlcTag` a `IPlcService`/`PlcSystemStatus` ha rafforzato il principio cardine della Clean Architecture: le interfacce permettono di sostituire la tecnologia sottostante (oggi un simulatore, domani un driver `S7Net`, Modbus o altro) senza toccare la logica applicativa.
 
 ## 🛠️ Tech Stack
 
 - C# / .NET 10
-- Clean Architecture (Core, Infrastructure, Worker)
+- Clean Architecture (Core, Infrastructure, Worker, WebHmi)
 - .NET Generic Host & `BackgroundService`
 - TCP/IP Sockets (`TcpListener` multi-client + `TcpClient`)
+- Blazor Server / Razor Components
 - Spectre.Console (TUI)
 - Dependency Injection / Inversion of Control
 - xUnit (Unit & Integration Testing)
+- Serilog
 - GitHub Actions (CI/CD)
 
 ## 🖼️ Screenshot
@@ -165,11 +345,11 @@ Il refactoring da `IPlcDriver`/`PlcTag` a `IPlcService`/`PlcSystemStatus` ha raf
 
 ![Server TCP/IP in ascolto sulla porta 5050 e sessione di comandi da un client PowerShell esterno](docs/images/server-tcp-ip-plcbridge.png)
 
-*(Screenshot di versioni precedenti)*
-
 **Worker — avvio con .NET Generic Host, polling in background e Graceful Shutdown:**
 
 ![Worker: bootstrap, connessione al PLC, polling della pressione e arresto pulito con ESC](docs/images/worker-polling-session.png)
+
+*(Screenshot di versioni precedenti)*
 
 **Server — sessione su connessione persistente:**
 
